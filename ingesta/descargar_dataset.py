@@ -55,7 +55,10 @@ def descargar_archivo_zip(url, directorio_destino):
 if __name__ == "__main__":
     url_descarga = "https://zenodo.org/records/5234969/files/RELLISUR.zip?download=1"
     
-    directorio_actual = Path(__file__).parent if '__file__' in globals() else Path.cwd()
-    carpeta_dataset = directorio_actual / "dataset"
+    # Obtener el directorio donde se encuentra este script (ingesta/)
+    directorio_script = Path(__file__).parent if '__file__' in globals() else Path.cwd()
+    
+    # Subir un nivel hacia la raíz del proyecto y apuntar a la carpeta dataset
+    carpeta_dataset = directorio_script.parent / "dataset"
     
     descargar_archivo_zip(url_descarga, carpeta_dataset)

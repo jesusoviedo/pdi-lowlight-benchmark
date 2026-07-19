@@ -90,16 +90,20 @@ def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semill
     return True
 
 if __name__ == "__main__":
-    directorio_actual = Path(__file__).parent if '__file__' in globals() else Path.cwd()
-    ruta_archivo_zip = directorio_actual / "dataset" / "RELLISUR.zip"
+    # Obtener el directorio donde se encuentra este script (ingesta/)
+    directorio_script = Path(__file__).parent if '__file__' in globals() else Path.cwd()
     
-    # Parámetros para la reproducibilidad de los experimentos (anótalos para tu informe)
+    # Subir un nivel hacia la raíz del proyecto y apuntar a la carpeta dataset
+    carpeta_dataset = directorio_script.parent / "dataset"
+    ruta_archivo_zip = carpeta_dataset / "RELLISUR.zip"
+    
+    # Parámetros para la reproducibilidad de los experimentos
     semilla_reproducibilidad = 42
     cantidad_imagenes_a_extraer = 1062
 
     extraer_pares_dataset(
         ruta_zip=ruta_archivo_zip,
-        directorio_salida=directorio_actual,
+        directorio_salida=carpeta_dataset,
         cantidad_muestras=cantidad_imagenes_a_extraer,
         semilla_aleatoria=semilla_reproducibilidad
     )
