@@ -1,8 +1,9 @@
 import zipfile
 import random
+import argparse
 from pathlib import Path
 
-def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semilla_aleatoria):
+def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semilla_aleatoria, eliminar_zip=False):
     """Extrae un muestreo aleatorio reproducible de pares de imágenes del dataset.
 
     Explora el archivo comprimido buscando las imágenes originales en la subcarpeta
@@ -16,6 +17,8 @@ def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semill
             la carpeta 'img'.
         cantidad_muestras: Número entero de pares de imágenes a extraer.
         semilla_aleatoria: Número entero para inicializar el muestreo determinista.
+        eliminar_zip: Booleano que indica si se debe borrar el archivo ZIP original 
+            del disco tras finalizar la extracción exitosamente.
 
     Returns:
         Booleano indicando si la operación de extracción finalizó con éxito.
@@ -87,9 +90,27 @@ def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semill
                 print(f"Advertencia: No se encontró la imagen LLLR para el par {nombre_imagen}")
 
     print(f"Extracción finalizada exitosamente: {pares_procesados} pares guardados en {carpeta_img}.")
+    
+    # Fuera del context manager `with`, procedemos a eliminar si se solicitó
+    if eliminar_zip:
+        try:
+            ruta_zip.unlink()
+            print(f"Limpieza: Archivo {ruta_zip.name} eliminado del disco exitosamente.")
+        except Exception as e:
+            print(f"Advertencia: No se pudo eliminar el archivo {ruta_zip.name}. Detalle: {e}")
+
     return True
 
 if __name__ == "__main__":
+    # Configuración de los argumentos de línea de comandos
+    parser = argparse.ArgumentParser(description="Extrae una muestra estadística del dataset RELLISUR.")
+    parser.add_argument(
+        "--eliminar-zip", 
+        action="store_true", 
+        help="Incluye esta bandera para eliminar el archivo ZIP original tras la extracción."
+    )
+    args = parser.parse_args()
+
     # Obtener el directorio donde se encuentra este script (ingesta/)
     directorio_script = Path(__file__).parent if '__file__' in globals() else Path.cwd()
     
@@ -105,5 +126,6 @@ if __name__ == "__main__":
         ruta_zip=ruta_archivo_zip,
         directorio_salida=carpeta_dataset,
         cantidad_muestras=cantidad_imagenes_a_extraer,
-        semilla_aleatoria=semilla_reproducibilidad
+        semilla_aleatoria=semilla_reproducibilidad,
+        eliminar_zip=args.eliminar_zip
     )
