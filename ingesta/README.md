@@ -8,7 +8,7 @@ Este directorio contiene los scripts responsables de la obtención y el acondici
 Este script establece una conexión directa con el repositorio de Zenodo. Descarga el archivo masivo `RELLISUR.zip` (8.9 GB) utilizando una estrategia de *streaming* por bloques. Esto optimiza el uso de la memoria RAM y proporciona una barra de progreso visual en la terminal.
 
 ### 2. `extraer_dataset.py`
-Este script evita la descompresión total del archivo en el disco. Lee directamente la tabla de contenidos del archivo ZIP en memoria, aplica una semilla aleatoria (`seed=42`) para seleccionar 1062 pares de imágenes de forma determinista y los extrae estructuradamente.
+Este script evita la descompresión total del archivo en el disco. Lee directamente la tabla de contenidos del archivo ZIP en memoria, aplica una semilla aleatoria (`seed=42`) para seleccionar 1062 pares de imágenes de forma determinista y los extrae estructuradamente. Incorpora un parámetro opcional (`--eliminar-zip`) diseñado para borrar el archivo masivo original tras una extracción exitosa, optimizando el almacenamiento local.
 
 ## 🚀 Ejecución del Pipeline
 
@@ -17,12 +17,22 @@ Asegúrate de ejecutar estos comandos desde la **raíz del proyecto** con tu ent
 **Paso 1: Descargar los datos brutos**
 ```bash
 python ingesta/descargar_dataset.py
+
 ```
 
 **Paso 2: Extraer la muestra de evaluación**
 
+Puedes realizar la extracción conservando el archivo original en el disco:
+
 ```bash
 python ingesta/extraer_dataset.py
+
+```
+
+O, de manera alternativa, puedes ejecutar la extracción instruyendo al script que elimine automáticamente el archivo `.zip` al finalizar para liberar espacio:
+
+```bash
+python ingesta/extraer_dataset.py --eliminar-zip
 
 ```
 
@@ -32,8 +42,9 @@ Tras la ejecución exitosa de ambos scripts, se creará automáticamente una car
 
 ```text
 dataset/
-├── RELLISUR.zip               # Archivo comprimido original
+├── RELLISUR.zip               # Archivo comprimido original (ausente si se usó --eliminar-zip)
 └── img/                       # Subconjunto extraído para la evaluación
     ├── original/              # 1062 imágenes de referencia (NLHR/X1)
     └── oscurecida/            # 1062 imágenes subexpuestas (LLLR) correspondientes
+
 ```
