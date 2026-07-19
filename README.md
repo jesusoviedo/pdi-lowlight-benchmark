@@ -12,7 +12,7 @@ Sigue estos pasos para inicializar el entorno de desarrollo:
 2. Clona este repositorio y navega a la carpeta raíz.
 3. Crea el entorno virtual a partir del archivo de configuración:
 ```bash
-   conda env create -f environment.yml
+conda env create -f environment.yml
 ```
 4. Activa el entorno de trabajo:
 ```bash
