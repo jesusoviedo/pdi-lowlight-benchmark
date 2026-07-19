@@ -14,10 +14,12 @@ Sigue estos pasos para inicializar el entorno de desarrollo:
 ```bash
 conda env create -f environment.yml
 ```
+
 4. Activa el entorno de trabajo:
 ```bash
 conda activate tp_1
 ```
+
 
 
 ## 📂 Estructura del Proyecto
@@ -30,7 +32,8 @@ El código está modularizado para separar la obtención de datos, el procesamie
 ├── LICENSE                  # Licencia de uso del código
 ├── ingesta/                 # Carpeta para la obtención y preparación de datos
 │   ├── descargar_dataset.py # Script de descarga segura por bloques (Streaming)
-│   └── extraer_dataset.py   # Script de muestreo aleatorio reproducible con semilla
+│   ├── extraer_dataset.py   # Script de extracción parametrizable y re-indexación
+│   └── README.md            # Documentación e instrucciones específicas de ingesta
 ├── realce/                  # Módulo de procesamiento espacial (Ecualización, CLAHE)
 │   └── __init__.py          # Inicializador del paquete
 ├── metricas/                # Módulo de evaluación matemática (utilitarios)
@@ -38,6 +41,7 @@ El código está modularizado para separar la obtención de datos, el procesamie
 │   ├── referenciadas.py     # Métricas con Ground Truth (PSNR, AMBE)
 │   ├── no_referenciadas.py  # Métricas espaciales (Entropía, Contraste)
 │   └── README.md            # Documentación técnica específica del módulo
+└── dataset/                 # Directorio generado dinámicamente (excluido en .gitignore)
 
 ```
 
@@ -46,7 +50,7 @@ El código está modularizado para separar la obtención de datos, el procesamie
 Para replicar el experimento de principio a fin, el proyecto está diseñado en fases modulares que deben ejecutarse en un orden lógico estricto. Todas las ejecuciones deben realizarse con el entorno Conda activado.
 
 **Fase 1: Obtención y Preparación de Datos (`ingesta/`)**
-Dirígete a la carpeta `ingesta/` y consulta las instrucciones detalladas en su archivo `README.md` interno. Allí se documentan los pasos exactos para descargar el dataset original de Zenodo y extraer la muestra estadística representativa sin colapsar la memoria del sistema.
+Dirígete a la carpeta `ingesta/` y consulta las instrucciones detalladas en su archivo `README.md` interno. Allí se documentan los pasos exactos para descargar el dataset original de Zenodo y extraer la muestra estadística representativa (hasta 850 pares únicos) sin colapsar la memoria del sistema.
 
 **Fase 2: Procesamiento y Evaluación (En desarrollo)**
 Próximamente se habilitará el módulo de algoritmos para aplicar la Ecualización de Histograma tradicional y CLAHE sobre las imágenes extraídas, así como el tabulador de métricas de error (PSNR, AMBE). El flujo de ejecución se actualizará en cuanto esta fase esté operativa.
