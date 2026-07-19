@@ -63,8 +63,11 @@ El módulo `metricas/` agrupa las funciones matemáticas referenciadas (`referen
 Este proyecto fue desarrollado como parte de la evaluación en Procesamiento Digital de Imágenes.
 
 * **Jesús Oviedo Riquelme** - [[GitHub](https://github.com/jesusoviedo)/[LinkedIn](https://www.linkedin.com/in/jesusoviedoriquelme/)]
-* **[Nombre Integrante 2]** - [Tu GitHub/LinkedIn]
-* **[Nombre Integrante 3]** - [Tu GitHub/LinkedIn]
+* **[Sofía Rivas Gaona]** - [Tu GitHub/LinkedIn]
+* **[Liz Torres Cáceres]** - [Tu GitHub/LinkedIn]
+* **[Gabriela Velázquez Sánchez]** - [Tu GitHub/LinkedIn]
+* **[Miguel Angel Vera]** - [Tu GitHub/LinkedIn]
+* **[Ernesto Yampey Cristaldo]** - [Tu GitHub/LinkedIn]
 
 ## 📄 Licencia
 
