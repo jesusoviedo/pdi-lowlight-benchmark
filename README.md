@@ -35,31 +35,13 @@ El código está modularizado para separar la obtención de datos, el procesamie
 
 ## 🚀 Flujo de Ejecución
 
-Para replicar el experimento de principio a fin, los scripts deben ejecutarse en un orden lógico estricto. Todas las ejecuciones deben realizarse con el entorno Conda activado.
+Para replicar el experimento de principio a fin, el proyecto está diseñado en fases modulares que deben ejecutarse en un orden lógico estricto. Todas las ejecuciones deben realizarse con el entorno Conda activado.
 
-**Paso 1: Obtención de Datos**
-Descarga el dataset original RELLISUR (8.9 GB). El script incluye una barra de progreso para monitorear la descarga.
+**Fase 1: Obtención y Preparación de Datos (`ingesta/`)**
+Dirígete a la carpeta `ingesta/` y consulta las instrucciones detalladas en su archivo `README.md` interno. Allí se documentan los pasos exactos para descargar el dataset original de Zenodo y extraer la muestra estadística representativa sin colapsar la memoria del sistema.
 
-```bash
-python src/descargar_dataset.py
-
-```
-
-**Paso 2: Muestreo Representativo**
-Extrae una muestra estadística de 1062 pares de imágenes directamente a memoria (sin descomprimir todo el ZIP en disco). Este script asegura el emparejamiento de las imágenes subexpuestas con sus referencias.
-
-```bash
-python src/extraer_dataset.py
-
-```
-
-**Paso 3: Procesamiento y Evaluación (Próximamente)**
-Aplica los algoritmos de mejora sobre las imágenes extraídas y tabula las métricas de error.
-
-```bash
-# python src/evaluar_metricas.py
-
-```
+**Fase 2: Procesamiento y Evaluación (En desarrollo)**
+Próximamente se habilitará el módulo de algoritmos para aplicar la Ecualización de Histograma tradicional y CLAHE sobre las imágenes extraídas, así como el tabulador de métricas de error (PSNR, AMBE). El flujo de ejecución se actualizará en cuanto esta fase esté operativa.
 
 ## 👥 Autores y Colaboradores
 
