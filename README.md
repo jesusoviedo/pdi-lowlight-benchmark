@@ -47,9 +47,9 @@ Próximamente se habilitará el módulo de algoritmos para aplicar la Ecualizaci
 
 Este proyecto fue desarrollado como parte de la evaluación en Procesamiento Digital de Imágenes.
 
-* **[Tu Nombre]** - *Desarrollo de Arquitectura y Scripts Base* - [Tu GitHub/LinkedIn]
-* **[Nombre Integrante 2]** - *[Rol o Aporte]* - [Enlace]
-* **[Nombre Integrante 3]** - *[Rol o Aporte]* - [Enlace]
+* **Jesús Oviedo Riquelme** - [[GitHub](https://github.com/jesusoviedo)/[LinkedIn](https://www.linkedin.com/in/jesusoviedoriquelme/)]
+* **[Nombre Integrante 2]** - [Tu GitHub/LinkedIn]
+* **[Nombre Integrante 3]** - [Tu GitHub/LinkedIn]
 
 ## 📄 Licencia
 
