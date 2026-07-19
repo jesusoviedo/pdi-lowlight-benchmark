@@ -111,6 +111,13 @@ if __name__ == "__main__":
         action="store_true", 
         help="Incluye esta bandera para eliminar el archivo ZIP original tras la extracción."
     )
+    # Nuevo argumento para definir la cantidad por consola
+    parser.add_argument(
+        "-n", "--cantidad", 
+        type=int, 
+        default=850, 
+        help="Cantidad de pares a extraer. Máximo soportado: 850."
+    )
     args = parser.parse_args()
 
     directorio_script = Path(__file__).parent if '__file__' in globals() else Path.cwd()
@@ -120,8 +127,13 @@ if __name__ == "__main__":
     semilla_reproducibilidad = 42
     MAX_CANTIDAD_IMAGENES = 850
 
-    # Cantidad de imágenes a extraer (pares de original y oscurecida)
-    cantidad_imagenes_a_extraer = min(850, MAX_CANTIDAD_IMAGENES)
+    # Lógica de validación del límite superior
+    if args.cantidad > MAX_CANTIDAD_IMAGENES:
+        print(f"[*] Aviso: Solicitaste {args.cantidad} pares, pero el dataset contiene un máximo de {MAX_CANTIDAD_IMAGENES} imágenes originales únicas.")
+        print(f"[*] El script extraerá el límite máximo disponible ({MAX_CANTIDAD_IMAGENES}).")
+        cantidad_imagenes_a_extraer = MAX_CANTIDAD_IMAGENES
+    else:
+        cantidad_imagenes_a_extraer = args.cantidad
 
     extraer_pares_dataset(
         ruta_zip=ruta_archivo_zip,
