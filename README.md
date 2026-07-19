@@ -1,4 +1,4 @@
-# pdi-lowlight-benchmark
+# Evaluación de Algoritmos para la Mejora de Imágenes Subexpuestas
 
 Este repositorio contiene el código fuente y la metodología para evaluar y comparar técnicas de mejora de imágenes en condiciones de baja luminosidad. El proyecto utiliza una muestra representativa del dataset RELLISUR para contrastar algoritmos clásicos como la Ecualización de Histograma tradicional y CLAHE mediante métricas cuantitativas (PSNR, AMBE).
 
