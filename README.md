@@ -31,6 +31,14 @@ El código está modularizado para separar la obtención de datos, el procesamie
 ├── ingesta/                 # Carpeta para la obtención y preparación de datos
 │   ├── descargar_dataset.py # Script de descarga segura por bloques (Streaming)
 │   └── extraer_dataset.py   # Script de muestreo aleatorio reproducible con semilla
+├── realce/                  # Módulo de procesamiento espacial (Ecualización, CLAHE)
+│   └── __init__.py          # Inicializador del paquete
+├── metricas/                # Módulo de evaluación matemática (utilitarios)
+│   ├── __init__.py          # Inicializador del paquete
+│   ├── referenciadas.py     # Métricas con Ground Truth (PSNR, AMBE)
+│   ├── no_referenciadas.py  # Métricas espaciales (Entropía, Contraste)
+│   └── README.md            # Documentación técnica específica del módulo
+
 ```
 
 ## 🚀 Flujo de Ejecución
