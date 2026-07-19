@@ -1,12 +1,13 @@
-import urllib.request
+import requests
 from pathlib import Path
+from tqdm import tqdm
 
 def descargar_archivo_zip(url, directorio_destino):
-    """Descarga un archivo desde una URL y lo guarda en el directorio especificado.
+    """Descarga un archivo desde una URL mostrando una barra de progreso visual.
     
     Verifica si el directorio de destino existe; si no, lo crea. Luego extrae el
-    nombre del archivo de la URL y realiza la descarga si el archivo no se
-    encuentra previamente en la ruta.
+    nombre del archivo de la URL y realiza la descarga en modo streaming (por bloques)
+    para optimizar el uso de memoria RAM.
 
     Args:
         url: Cadena de texto con la dirección web de descarga directa.
@@ -25,12 +26,30 @@ def descargar_archivo_zip(url, directorio_destino):
         print(f"El archivo ya existe en el sistema: {ruta_completa}")
         return ruta_completa
         
-    print(f"Iniciando descarga desde: {url}")
-    print("Por favor, espere. Esto puede tardar dependiendo del tamaño del archivo...")
+    print(f"Iniciando conexión con: {url}")
     
-    urllib.request.urlretrieve(url, ruta_completa)
+    # Iniciar la petición HTTP en modo streaming
+    respuesta = requests.get(url, stream=True)
+    respuesta.raise_for_status()  # Lanza una excepción si hay un error HTTP (ej. 404, 500)
     
-    print(f"Descarga finalizada con éxito en: {ruta_completa}")
+    # Extraer el tamaño total del archivo desde las cabeceras HTTP
+    tamano_total_bytes = int(respuesta.headers.get('content-length', 0))
+    
+    # Configurar el bloque de escritura con la barra de progreso de tqdm
+    with open(ruta_completa, 'wb') as archivo_salida, tqdm(
+        desc=nombre_archivo,
+        total=tamano_total_bytes,
+        unit='iB',
+        unit_scale=True,
+        unit_divisor=1024,
+    ) as barra_progreso:
+        # Descargar y escribir en disco en bloques de 1 MB
+        for bloque_datos in respuesta.iter_content(chunk_size=1024 * 1024):
+            if bloque_datos:
+                tamano_escrito = archivo_salida.write(bloque_datos)
+                barra_progreso.update(tamano_escrito)
+                
+    print(f"\nDescarga finalizada con éxito en: {ruta_completa}")
     return ruta_completa
 
 if __name__ == "__main__":
