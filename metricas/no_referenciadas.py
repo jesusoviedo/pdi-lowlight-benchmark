@@ -15,6 +15,7 @@ def calcular_entropia(imagen):
     
     return {"Entropia": float(entropia)}
 
+
 def calcular_contraste(imagen):
     """
     Calcula el contraste global de una imagen basado en su desviación estándar.

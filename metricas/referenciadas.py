@@ -17,6 +17,7 @@ def calcular_ambe(imagen_a, imagen_b):
     
     return {"AMBE": float(np.abs(media_a - media_b))}
 
+
 def calcular_psnr(imagen_a, imagen_b, max_val=255.0):
     """
     Calcula la Relación Señal a Ruido Máxima (PSNR) entre dos imágenes.
@@ -40,6 +41,7 @@ def calcular_psnr(imagen_a, imagen_b, max_val=255.0):
     psnr = 20 * np.log10(max_val / np.sqrt(mse))
     
     return {"PSNR": float(psnr)}
+
 
 def calcular_ssim(imagen_referencia, imagen_procesada, rango_datos=255):
     """
