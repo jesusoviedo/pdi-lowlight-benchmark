@@ -1,6 +1,6 @@
 # Evaluación de Algoritmos para la Mejora de Imágenes Subexpuestas
 
-Este repositorio contiene el código fuente y la metodología para evaluar y comparar técnicas de mejora de imágenes en condiciones de baja luminosidad. El proyecto utiliza una muestra representativa del dataset [RELLISUR](https://vap.aau.dk/rellisur/) para contrastar algoritmos clásicos como la Ecualización de Histograma tradicional y CLAHE mediante métricas cuantitativas de error espacial y estructural (PSNR, AMBE, Contraste y Entropía).
+Este repositorio contiene el código fuente y la metodología para evaluar y comparar técnicas de mejora de imágenes en condiciones de baja luminosidad. El proyecto utiliza una muestra determinista del dataset [RELLISUR](https://vap.aau.dk/rellisur/) para contrastar algoritmos clásicos (Ecualización de Histograma tradicional y CLAHE) y un método adicional ([Nombre del Tercer Algoritmo]) mediante métricas cuantitativas de error espacial, preservación de brillo y similitud estructural (PSNR, AMBE, Contraste, Entropía y SSIM).
 
 ## 🛠️ Configuración del Entorno (Conda)
 
@@ -22,7 +22,7 @@ conda activate tp_1
 
 ## 📂 Estructura del Proyecto
 
-El código está modularizado para separar la obtención de datos, el procesamiento algorítmico y la evaluación cuantitativa. La estructura principal del repositorio es la siguiente:
+El código está modularizado para separar la obtención de datos, el procesamiento algorítmico, la evaluación matemática y el análisis estadístico. La estructura principal es la siguiente:
 
 ```text
 ├── environment.yml          # Dependencias y configuración del entorno Conda
@@ -32,16 +32,17 @@ El código está modularizado para separar la obtención de datos, el procesamie
 │   ├── descargar_dataset.py # Script de descarga segura por bloques (Streaming)
 │   ├── extraer_dataset.py   # Script de extracción parametrizable y re-indexación
 │   └── README.md            # Documentación e instrucciones específicas de ingesta
-├── realce/                  # Módulo de procesamiento espacial (Ecualización, CLAHE)
-│   ├── algoritmos.py        # Implementaciones de ecualización global y CLAHE
+├── realce/                  # Módulo de procesamiento espacial
+│   ├── algoritmos.py        # Implementaciones de Ecualización, CLAHE y [Algoritmo 3]
 │   ├── __init__.py          # Inicializador del paquete
 │   └── README.md            # Documentación técnica específica del realce
 ├── metricas/                # Módulo de evaluación matemática (utilitarios)
 │   ├── __init__.py          # Inicializador del paquete
-│   ├── referenciadas.py     # Métricas con Ground Truth (PSNR, AMBE)
-│   ├── no_referenciadas.py  # Métricas espaciales (Entropía, Contraste)
+│   ├── referenciadas.py     # Métricas con Ground Truth (PSNR, AMBE, SSIM)
+│   ├── no_referenciadas.py  # Métricas espaciales sin referencia (Entropía, Contraste)
 │   └── README.md            # Documentación técnica específica del módulo
 └── dataset/                 # Directorio generado dinámicamente (excluido en .gitignore)
+
 
 ```
 
@@ -50,7 +51,7 @@ El código está modularizado para separar la obtención de datos, el procesamie
 Para replicar el experimento de principio a fin, el proyecto está diseñado en fases modulares que deben ejecutarse en un orden lógico estricto. Todas las ejecuciones deben realizarse con el entorno Conda activado.
 
 **Fase 1: Obtención y Preparación de Datos (`ingesta/`)**
-Dirígete a la carpeta `ingesta/` y consulta las instrucciones detalladas en su archivo `README.md` interno. Allí se documentan los pasos exactos para descargar el dataset original de Zenodo y extraer la muestra estadística representativa (hasta 850 pares únicos) sin colapsar la memoria del sistema.
+Dirígete a la carpeta `ingesta/` y consulta su `README.md`. Allí se documentan los pasos exactos para descargar el dataset original de Zenodo y extraer la muestra estadística representativa (hasta 850 pares únicos) aplicando una semilla reproducible para aislar el ruido lumínico.
 
 **Fase 2: Procesamiento y Realce Espacial (`realce/`)**
 Los algoritmos de mejora en el dominio espacial (ecualización global y CLAHE) se encuentran implementados de forma modular en el paquete `realce/`. Estos métodos operan sobre imágenes en escala de grises para reasignar los niveles de intensidad y optimizar la visibilidad de los detalles. Consulta la documentación interna de la carpeta para verificar los parámetros de configuración.
@@ -73,5 +74,5 @@ Este proyecto fue desarrollado como parte de la evaluación en Procesamiento Dig
 
 Este repositorio está sujeto a dos esquemas de licenciamiento distintos:
 
-* **Código Fuente:** Los scripts de Python desarrollados para este proyecto se distribuyen bajo la [Licencia MIT](https://www.google.com/search?q=LICENSE). Eres libre de utilizarlos, modificarlos y distribuirlos.
+* **Código Fuente:** Los scripts de Python desarrollados se distribuyen bajo la [Licencia MIT](./LICENSE).
 * **Base de Datos (RELLISUR):** Las imágenes empleadas en los experimentos pertenecen a los autores de RELLISUR (*Aakerberg et al., 2021*) y se distribuyen bajo la licencia **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
