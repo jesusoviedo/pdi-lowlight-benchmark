@@ -1,19 +1,24 @@
 def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semilla_aleatoria, eliminar_zip=False):
-    """Extrae un muestreo aleatorio reproducible de pares de imágenes del dataset.
+    """
+    Extrae un muestreo aleatorio reproducible de pares de imágenes del dataset.
 
     Agrupa todas las variantes de subexposición (LLLR) para cada imagen original (NLHR) 
     y selecciona una al azar de forma determinista (usando la semilla). Aplica una 
     re-indexación secuencial global (ej. 0001.png) para mantener paridad estricta.
 
     Args:
-        ruta_zip: Objeto Path que apunta al archivo ZIP del dataset.
-        directorio_salida: Objeto Path que indica la carpeta raíz donde se crearán las subcarpetas de imágenes.
-        cantidad_muestras: Entero que define la cantidad máxima de pares a extraer.
-        semilla_aleatoria: Entero utilizado para fijar el estado del generador de números aleatorios.
-        eliminar_zip: Booleano, si es Verdadero, elimina el archivo comprimido tras finalizar la extracción.
+        ruta_zip (Path): Objeto Path que apunta al archivo ZIP del dataset.
+        directorio_salida (Path): Objeto Path que indica la carpeta raíz donde se crearán 
+            las subcarpetas de imágenes.
+        cantidad_muestras (int): Entero que define la cantidad máxima de pares a extraer.
+        semilla_aleatoria (int): Entero utilizado para fijar el estado del generador de 
+            números aleatorios (garantiza la reproducibilidad de los experimentos).
+        eliminar_zip (bool, optional): Si es Verdadero, elimina el archivo comprimido tras 
+            finalizar la extracción. Por defecto es False.
 
     Returns:
-        Booleano que indica si la operación de extracción finalizó con éxito (Verdadero) o falló (Falso).
+        bool: Verdadero si la operación de extracción finalizó con éxito, Falso si ocurrió 
+            un error crítico (ejemplo: archivo no encontrado).
     """
     if not ruta_zip.exists():
         print(f"Error crítico: El archivo comprimido no existe en {ruta_zip}")

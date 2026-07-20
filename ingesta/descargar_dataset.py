@@ -3,19 +3,20 @@ from pathlib import Path
 from tqdm import tqdm
 
 def descargar_archivo_zip(url, directorio_destino):
-    """Descarga un archivo desde una URL mostrando una barra de progreso visual.
+    """
+    Descarga un archivo desde una URL mostrando una barra de progreso visual.
     
     Verifica si el directorio de destino existe; si no, lo crea. Luego extrae el
     nombre del archivo de la URL y realiza la descarga en modo streaming (por bloques)
     para optimizar el uso de memoria RAM.
 
     Args:
-        url: Cadena de texto con la dirección web de descarga directa.
-        directorio_destino: Objeto Path que representa la carpeta donde se 
-            almacenará el archivo descargado.
+        url (str): Cadena de texto con la dirección web de descarga directa.
+        directorio_destino (Path): Objeto Path (del módulo pathlib) que representa la 
+            carpeta donde se almacenará el archivo descargado.
 
     Returns:
-        Objeto Path con la ruta completa y absoluta hacia el archivo descargado.
+        Path: Objeto Path con la ruta completa y absoluta hacia el archivo descargado.
     """
     directorio_destino.mkdir(parents=True, exist_ok=True)
     
