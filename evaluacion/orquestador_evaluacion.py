@@ -31,7 +31,7 @@ def aplicar_y_medir_tiempo(funcion_mejora, imagen_gris):
     return imagen_resultante, float(tiempo_milisegundos)
 
 
-def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_img, ruta_salida_json):
+def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_img, ruta_archivo_json):
     """
     Orquesta la ejecución de los experimentos de mejora de imagen sobre el dataset.
 
@@ -44,13 +44,14 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
         ruta_originales: Objeto Path al directorio con las imágenes de referencia.
         ruta_oscurecidas: Objeto Path al directorio con las imágenes a procesar.
         ruta_salida_img: Objeto Path al directorio donde se guardarán las imágenes.
-        ruta_salida_json: Objeto Path al directorio donde se guardará el reporte JSON.
+        ruta_archivo_json: Objeto Path completo del archivo JSON de salida.
     """
     # Crear estructura de directorios de salida dinámicamente
     ruta_salida_img.mkdir(parents=True, exist_ok=True)
-    ruta_salida_json.mkdir(parents=True, exist_ok=True)
+    # Crea la carpeta padre del archivo JSON dinámicamente si no existe
+    ruta_archivo_json.parent.mkdir(parents=True, exist_ok=True)
 
-    # Definición modular de los experimentos (Criterio 27: Parametrización clara)
+    # Definición modular de los experimentos
     configuraciones_experimentos = [
         {
             "id_metodo": "HE_Global",
@@ -73,7 +74,7 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
 
     print("Iniciando procesamiento por lotes del dataset...")
     
-    # Iteración sobre los archivos (I/O). El procesamiento interno es vectorizado.
+    # Iteración sobre los archivos (I/O).
     for ruta_imagen_oscura in ruta_oscurecidas.glob("*.png"):
         nombre_archivo = ruta_imagen_oscura.name
         ruta_imagen_original = ruta_originales / nombre_archivo
@@ -127,7 +128,6 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {tiempo_ms:.2f} ms")
 
     # Volcado estructurado de los resultados al disco
-    ruta_archivo_json = ruta_salida_json / "resultados_evaluacion.json"
     with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
         json.dump(registro_resultados, archivo_json, indent=2, ensure_ascii=False)
         
@@ -135,16 +135,21 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
 
 
 if __name__ == "__main__":
-    # DEFINICIÓN DE CONSTANTES ESTRUCTURALES
+    # DEFINICIÓN DE CONSTANTES ESTRUCTURALES Y NOMBRES
+    NOMBRE_CARPETA_DATASET = "dataset"
+    NOMBRE_CARPETA_EXPERIMENTOS = "experimento"
+    
     NOMBRE_CARPETA_IMG = "img"
     NOMBRE_CARPETA_ORIGINAL = "original"
     NOMBRE_CARPETA_OSCURECIDA = "oscurecida"
     NOMBRE_CARPETA_JSON = "json"
+    
+    NOMBRE_ARCHIVO_JSON = "resultados_evaluacion.json"
 
     # Configuración de rutas base dinámicas
     directorio_actual = Path(__file__).parent if '__file__' in globals() else Path.cwd()
-    directorio_base_dataset = directorio_actual.parent / "dataset"
-    directorio_base_experimentos = directorio_actual.parent / "experimento"
+    directorio_base_dataset = directorio_actual.parent / NOMBRE_CARPETA_DATASET
+    directorio_base_experimentos = directorio_actual.parent / NOMBRE_CARPETA_EXPERIMENTOS
     
     # Composición de rutas de entrada (Lectura)
     ruta_entrada_originales = directorio_base_dataset / NOMBRE_CARPETA_IMG / NOMBRE_CARPETA_ORIGINAL
@@ -152,12 +157,12 @@ if __name__ == "__main__":
     
     # Composición de rutas de salida (Escritura)
     ruta_salida_imagenes = directorio_base_experimentos / NOMBRE_CARPETA_IMG
-    ruta_salida_metricas = directorio_base_experimentos / NOMBRE_CARPETA_JSON
+    ruta_salida_archivo_json = directorio_base_experimentos / NOMBRE_CARPETA_JSON / NOMBRE_ARCHIVO_JSON
     
-    # Inyección de dependencias (rutas) a la función principal
+    # Inyección de dependencias (rutas completas) a la función principal
     ejecutar_pipeline_evaluacion(
         ruta_entrada_originales, 
         ruta_entrada_oscurecidas, 
         ruta_salida_imagenes, 
-        ruta_salida_metricas
+        ruta_salida_archivo_json
     )
