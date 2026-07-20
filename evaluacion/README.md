@@ -8,9 +8,6 @@ Su función es acoplar dinámicamente los algoritmos de realce con las métricas
 
 1. Haber completado la **Fase 1** (descarga y extracción del dataset) utilizando los scripts de la carpeta `ingesta/`.
 2. Tener activado el entorno virtual del proyecto.
-```bash
-conda activate tp_1
-```
 
 ## Instrucciones de Ejecución
 
@@ -30,13 +27,8 @@ El orquestador funciona con rutas dinámicas relativas, asumiendo la siguiente e
 
 Para garantizar una evaluación justa y determinista de las técnicas de mejora de imagen, los hiperparámetros están codificados en el bloque principal del script:
 
-## Parámetros de Reproducibilidad
-
-Para garantizar una evaluación justa y determinista de las técnicas de mejora de imagen, los hiperparámetros están codificados en el bloque principal del script:
-
-*   **CLAHE (Contrast Limited Adaptive Histogram Equalization):**
-    *   `clip_limit`: 2.0
-    *   `tile_grid_size`: (8, 8)
-*   **Ecualización de Histograma (HE) Global:** ejecución matemática estándar basada en la función de distribución acumulativa (CDF) de toda la imagen, sin parámetros de segmentación espacial.
-*   **BHE2PL (Bi-Histogram Equalization with Two Plateau Limits):** ejecución algorítmica automatizada que utiliza la intensidad media espacial como punto de corte para el cálculo de mesetas, sin requerir hiperparámetros manuales de segmentación.l.
-
+* **CLAHE (Contrast Limited Adaptive Histogram Equalization):**
+    * `clip_limit`: 2.0
+    * `tile_grid_size`: (8, 8)
+* **Ecualización de Histograma (HE) Global:** ejecución matemática estándar basada en la función de distribución acumulativa (CDF) de toda la imagen, sin parámetros de segmentación espacial.
+* **BHE2PL (Bi-Histogram Equalization with Two Plateau Limits):** ejecución algorítmica automatizada que utiliza la intensidad media espacial como punto de corte para el cálculo de mesetas, sin requerir hiperparámetros manuales de segmentación.
