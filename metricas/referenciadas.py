@@ -1,4 +1,5 @@
 import numpy as np
+from skimage.metrics import structural_similarity
 
 def calcular_ambe(imagen_a, imagen_b):
     """
@@ -39,3 +40,32 @@ def calcular_psnr(imagen_a, imagen_b, max_val=255.0):
     psnr = 20 * np.log10(max_val / np.sqrt(mse))
     
     return {"PSNR": float(psnr)}
+
+def calcular_ssim(imagen_referencia, imagen_procesada, rango_datos=255):
+    """
+    Calcula el Índice de Similitud Estructural (SSIM) entre dos imágenes.
+    
+    Esta métrica evalúa la degradación estructural, de luminancia y contraste,
+    penalizando las distorsiones visuales. Un valor cercano a 1 indica una 
+    similitud perfecta con la Verdad Terreno.
+    
+    Args:
+        imagen_referencia: La imagen original con iluminación normal (Verdad Terreno).
+        imagen_procesada: La imagen resultante tras aplicar el algoritmo de mejora.
+        rango_datos: El valor máximo posible del rango dinámico de los píxeles.
+        
+    Returns:
+        Diccionario con la clave 'SSIM' y su respectivo valor numérico.
+    """
+    # Convertimos los arreglos a flotantes para evitar desbordamientos en las operaciones internas
+    referencia_float = imagen_referencia.astype(np.float64)
+    procesada_float = imagen_procesada.astype(np.float64)
+    
+    # structural_similarity es una operación completamente vectorizada
+    valor_ssim = structural_similarity(
+        referencia_float,
+        procesada_float,
+        data_range=rango_datos
+    )
+    
+    return {"SSIM": float(valor_ssim)}
