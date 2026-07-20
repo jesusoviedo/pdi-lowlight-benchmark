@@ -1,3 +1,8 @@
+import zipfile
+import random
+import argparse
+from pathlib import Path
+
 def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semilla_aleatoria, eliminar_zip=False):
     """
     Extrae un muestreo aleatorio reproducible de pares de imágenes del dataset.
