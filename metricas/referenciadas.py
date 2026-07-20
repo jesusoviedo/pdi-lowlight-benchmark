@@ -57,7 +57,7 @@ def calcular_ssim(imagen_referencia, imagen_procesada, rango_datos=255):
         rango_datos: El valor máximo posible del rango dinámico de los píxeles.
         
     Returns:
-        Diccionario con la clave 'SSIM' y su respectivo valor numérico.
+        dict: Diccionario con la clave 'SSIM' y su respectivo valor numérico.
     """
     # Convertimos los arreglos a flotantes para evitar desbordamientos en las operaciones internas
     referencia_float = imagen_referencia.astype(np.float64)
