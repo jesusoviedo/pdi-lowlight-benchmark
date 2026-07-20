@@ -1,7 +1,8 @@
+# Estas carpetas no debe ser versionada en Git, ya que puede ser muy grande y no es necesario compartirla.
 # Carpeta donde se almacenará el dataset extraído. 
-# Esta carpeta no debe ser versionada en Git, ya que puede ser muy grande 
-# y no es necesario compartirla.
 dataset
+# Carpeta donde se almacenarán los resultados de los experimentos.
+experimento
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
