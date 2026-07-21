@@ -11,9 +11,9 @@ Su función es acoplar dinámicamente los algoritmos de realce con las métricas
 
 ## Instrucciones de Ejecución
 
-Para iniciar el procesamiento masivo, asegúrese de estar posicionado dentro de este directorio (`evaluacion/`) y ejecute el orquestador:
+Para iniciar el procesamiento masivo, asegúrese de tener su entorno virtual activado y estar posicionado en la **raíz del proyecto** (directorio principal). Desde allí, ejecute el orquestador:
 ```bash
-python orquestador_evaluacion.py
+python evaluacion/orquestador_evaluacion.py
 ```
 
 ## Flujo de Datos (I/O)
