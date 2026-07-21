@@ -129,11 +129,18 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
         contraste_original = calcular_contraste(imagen_referencia)
         entropia_original = calcular_entropia(imagen_referencia)
 
+        # Calcular métricas de la imagen oscura una sola vez por imagen
+        psnr_oscurecida = calcular_psnr(imagen_referencia, imagen_oscura)
+        ambe_oscurecida = calcular_ambe(imagen_referencia, imagen_oscura)
+        ssim_oscurecida = calcular_ssim(imagen_referencia, imagen_oscura)
+        contraste_oscurecida = calcular_contraste(imagen_oscura)
+        entropia_oscurecida = calcular_entropia(imagen_oscura)
+
         for config in configuraciones_experimentos:
             metodo = config["id_metodo"]
             
             # Ejecución algorítmica y perfilado de tiempo
-            imagen_procesada, metrica_tiempo = aplicar_y_medir_tiempo(config["funcion"], imagen_oscura)
+            imagen_procesada, metrica_tiempo_procesada = aplicar_y_medir_tiempo(config["funcion"], imagen_oscura)
             
             # Guardado en disco de la imagen resultante
             nombre_base = ruta_imagen_oscura.stem
@@ -142,11 +149,11 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             cv2.imwrite(str(ruta_guardado_img), imagen_procesada)
             
             # Cálculo de métricas de calidad (referenciadas y no referenciadas)
-            metrica_psnr = calcular_psnr(imagen_referencia, imagen_procesada)
-            metrica_ambe = calcular_ambe(imagen_referencia, imagen_procesada)
-            metrica_ssim = calcular_ssim(imagen_referencia, imagen_procesada)
-            metrica_contraste = calcular_contraste(imagen_procesada)
-            metrica_entropia = calcular_entropia(imagen_procesada)
+            psnr_procesada = calcular_psnr(imagen_referencia, imagen_procesada)
+            ambe_procesada = calcular_ambe(imagen_referencia, imagen_procesada)
+            ssim_procesada = calcular_ssim(imagen_referencia, imagen_procesada)
+            contraste_procesada = calcular_contraste(imagen_procesada)
+            entropia_procesada = calcular_entropia(imagen_procesada)
 
             # Construcción del bloque JSON
             registro_resultados.append({
@@ -159,12 +166,19 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
                     "procesada": str(ruta_guardado_img.relative_to(ruta_raiz_proyecto).as_posix())
                 },
                 "metricas_imagen_procesada": {
-                    **metrica_psnr,
-                    **metrica_ambe,
-                    **metrica_ssim,
-                    **metrica_contraste,
-                    **metrica_entropia,
-                    **metrica_tiempo
+                    **psnr_procesada,
+                    **ambe_procesada,
+                    **ssim_procesada,
+                    **contraste_procesada,
+                    **entropia_procesada,
+                    **metrica_tiempo_procesada
+                },
+                "metricas_imagen_oscurecida": {
+                    **psnr_oscurecida,
+                    **ambe_oscurecida,
+                    **ssim_oscurecida,
+                    **contraste_oscurecida,
+                    **entropia_oscurecida
                 },
                 "metricas_imagen_original": {
                     **contraste_original,
@@ -172,7 +186,7 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
                 }
             })
             
-            print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {metrica_tiempo['tiempo_ms']:.2f} ms")
+            print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {metrica_tiempo_procesada['tiempo_ms']:.2f} ms")
 
     # Volcado estructurado de los resultados al disco
     with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
