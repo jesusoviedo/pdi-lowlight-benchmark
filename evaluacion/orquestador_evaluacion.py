@@ -99,7 +99,17 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
         {
             "id_metodo": "CLAHE_2_8",
             "funcion": lambda img: aplicar_clahe(img, limite_recorte=2.0, tamano_cuadricula=(8, 8)),
-            "parametros": {"clip_limit": 2.0, "tile_grid_size": [8, 8]}
+            "parametros": {"limite_contraste": 2.0, "tamano_cuadricula": [8, 8]}
+        },
+                {
+            "id_metodo": "CLAHE_2_4",
+            "funcion": lambda img: aplicar_clahe(img, limite_recorte=2.0, tamano_cuadricula=(4, 4)),
+            "parametros": {"limite_contraste": 2.0, "tamano_cuadricula": [4, 4]}
+        },
+                {
+            "id_metodo": "CLAHE_4_8",
+            "funcion": lambda img: aplicar_clahe(img, limite_recorte=4.0, tamano_cuadricula=(8, 8)),
+            "parametros": {"limite_contraste": 4.0, "tamano_cuadricula": [8, 8]}
         },
         {
             "id_metodo": "BHE2PL",
