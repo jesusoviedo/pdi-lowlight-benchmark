@@ -1,13 +1,49 @@
+import sys
 import json
 import time
 from pathlib import Path
 import cv2
 import numpy as np
 
+# Resolvemos la ruta absoluta del archivo actual y subimos un nivel hacia la raíz del proyecto
+directorio_actual = Path(__file__).resolve().parent
+directorio_raiz = directorio_actual.parent
+# Agregamos la raíz al entorno de búsqueda de Python si no está presente
+if str(directorio_raiz) not in sys.path:
+    sys.path.insert(0, str(directorio_raiz))
+
 # Importación de funciones de mejora de imagen y métricas
 from realce.algoritmos import aplicar_ecualizacion_global, aplicar_clahe, aplicar_bhe2pl
 from metricas.referenciadas import calcular_psnr, calcular_ambe, calcular_ssim
 from metricas.no_referenciadas import calcular_contraste, calcular_entropia
+
+def leer_imagen_robusto(ruta_imagen):
+    """
+    Lee una imagen desde el disco soportando caracteres especiales en la ruta.
+
+    Utiliza numpy para leer los bytes en crudo y el decodificador de OpenCV
+    para evitar los problemas nativos de cv2.imread con tildes en Windows.
+
+    Args:
+        ruta_imagen: Cadena de texto o un objeto Path indicando la ubicación del archivo.
+
+    Returns:
+        Matriz bidimensional correspondiente a la imagen en escala de grises.
+        Genera una excepción si la imagen no se puede decodificar.
+    """
+    ruta_texto = str(ruta_imagen)
+    arreglo_bytes = np.fromfile(ruta_texto, dtype=np.uint8)
+    
+    if arreglo_bytes.size == 0:
+        raise FileNotFoundError(f"No se pudo leer el archivo en la ruta: {ruta_texto}")
+        
+    imagen_decodificada = cv2.imdecode(arreglo_bytes, cv2.IMREAD_GRAYSCALE)
+    
+    if imagen_decodificada is None:
+        raise ValueError(f"El archivo existe pero no es una imagen válida: {ruta_texto}")
+        
+    return imagen_decodificada
+
 
 def aplicar_y_medir_tiempo(funcion_mejora, imagen_gris):
     """
@@ -21,14 +57,14 @@ def aplicar_y_medir_tiempo(funcion_mejora, imagen_gris):
         imagen_gris: Matriz bidimensional de la imagen en escala de grises.
 
     Returns:
-        Tupla que contiene la matriz procesada y el tiempo de ejecución en milisegundos.
+        Tupla que contiene la matriz procesada y un diccionario con el tiempo en milisegundos.
     """
     tiempo_inicio = time.perf_counter()
     imagen_resultante = funcion_mejora(imagen_gris)
     tiempo_fin = time.perf_counter()
     
     tiempo_milisegundos = (tiempo_fin - tiempo_inicio) * 1000.0
-    return imagen_resultante, float(tiempo_milisegundos)
+    return imagen_resultante, {"tiempo_ms": float(tiempo_milisegundos)}
 
 
 def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_img, ruta_archivo_json):
@@ -59,7 +95,7 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             "parametros": {}
         },
         {
-            "id_metodo": "CLAHE_2.0_8x8",
+            "id_metodo": "CLAHE_2_8",
             "funcion": lambda img: aplicar_clahe(img, limite_recorte=2.0, tamano_cuadricula=(8, 8)),
             "parametros": {"clip_limit": 2.0, "tile_grid_size": [8, 8]}
         },
@@ -83,9 +119,9 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             print(f"Advertencia: Verdad Terreno no encontrada para {nombre_archivo}")
             continue
 
-        # Carga en memoria mediante rutinas optimizadas de OpenCV
-        imagen_oscura = cv2.imread(str(ruta_imagen_oscura), cv2.IMREAD_GRAYSCALE)
-        imagen_referencia = cv2.imread(str(ruta_imagen_original), cv2.IMREAD_GRAYSCALE)
+        # Carga en memoria mediante función robusta para soportar tildes en rutas de Windows
+        imagen_oscura = leer_imagen_robusto(ruta_imagen_oscura)
+        imagen_referencia = leer_imagen_robusto(ruta_imagen_original)
 
         for config in configuraciones_experimentos:
             metodo = config["id_metodo"]
@@ -94,7 +130,8 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             imagen_procesada, tiempo_ms = aplicar_y_medir_tiempo(config["funcion"], imagen_oscura)
             
             # Guardado en disco de la imagen resultante
-            nombre_salida = f"{metodo}_{nombre_archivo}"
+            nombre_base = ruta_imagen_oscura.stem
+            nombre_salida = f"{nombre_base}_{metodo}.png"
             ruta_guardado_img = ruta_salida_img / nombre_salida
             cv2.imwrite(str(ruta_guardado_img), imagen_procesada)
             
@@ -107,7 +144,7 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
 
             # Construcción del bloque JSON por iteración
             registro_resultados.append({
-                "id_imagen": nombre_archivo,
+                "id_imagen": nombre_salida,
                 "metodo": metodo,
                 "parametros": config["parametros"],
                 "rutas": {
@@ -116,16 +153,16 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
                     "procesada": str(ruta_guardado_img.as_posix())
                 },
                 "metricas": {
-                    "PSNR": valor_psnr,
-                    "AMBE": valor_ambe,
-                    "Contraste": valor_contraste,
-                    "Entropia": valor_entropia,
-                    "SSIM": valor_ssim,
-                    "tiempo_ms": round(tiempo_ms, 4)
+                    **valor_psnr,
+                    **valor_ambe,
+                    **valor_ssim,
+                    **valor_contraste,
+                    **valor_entropia,
+                    **tiempo_ms
                 }
             })
             
-            print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {tiempo_ms:.2f} ms")
+            print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {tiempo_ms['tiempo_ms']:.2f} ms")
 
     # Volcado estructurado de los resultados al disco
     with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
