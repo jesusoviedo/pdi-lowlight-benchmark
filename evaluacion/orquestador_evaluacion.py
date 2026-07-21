@@ -67,20 +67,22 @@ def aplicar_y_medir_tiempo(funcion_mejora, imagen_gris):
     return imagen_resultante, {"tiempo_ms": float(tiempo_milisegundos)}
 
 
-def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_img, ruta_archivo_json):
+def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_img, ruta_archivo_json, ruta_raiz_proyecto):
     """
     Orquesta la ejecución de los experimentos de mejora de imagen sobre el dataset.
 
     Recorre el directorio de imágenes oscurecidas, aplica las configuraciones de 
     algoritmos definidas, calcula las métricas contrastando con la imagen original 
     (Verdad Terreno), guarda las imágenes resultantes y compila un registro JSON 
-    estructurado para su posterior análisis estadístico.
+    estructurado con rutas relativas para su posterior análisis estadístico.
 
     Args:
         ruta_originales: Objeto Path al directorio con las imágenes de referencia.
         ruta_oscurecidas: Objeto Path al directorio con las imágenes a procesar.
         ruta_salida_img: Objeto Path al directorio donde se guardarán las imágenes.
         ruta_archivo_json: Objeto Path completo del archivo JSON de salida.
+        ruta_raiz_proyecto: Objeto Path que apunta a la raíz del proyecto para 
+            calcular las rutas relativas.
     """
     # Crear estructura de directorios de salida dinámicamente
     ruta_salida_img.mkdir(parents=True, exist_ok=True)
@@ -123,11 +125,15 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
         imagen_oscura = leer_imagen_robusto(ruta_imagen_oscura)
         imagen_referencia = leer_imagen_robusto(ruta_imagen_original)
 
+        # Calcular métricas originales una sola vez por imagen
+        contraste_original = calcular_contraste(imagen_referencia)
+        entropia_original = calcular_entropia(imagen_referencia)
+
         for config in configuraciones_experimentos:
             metodo = config["id_metodo"]
             
             # Ejecución algorítmica y perfilado de tiempo
-            imagen_procesada, tiempo_ms = aplicar_y_medir_tiempo(config["funcion"], imagen_oscura)
+            imagen_procesada, metrica_tiempo = aplicar_y_medir_tiempo(config["funcion"], imagen_oscura)
             
             # Guardado en disco de la imagen resultante
             nombre_base = ruta_imagen_oscura.stem
@@ -136,33 +142,37 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             cv2.imwrite(str(ruta_guardado_img), imagen_procesada)
             
             # Cálculo de métricas de calidad (referenciadas y no referenciadas)
-            valor_psnr = calcular_psnr(imagen_referencia, imagen_procesada)
-            valor_ambe = calcular_ambe(imagen_referencia, imagen_procesada)
-            valor_ssim = calcular_ssim(imagen_referencia, imagen_procesada)
-            valor_contraste = calcular_contraste(imagen_procesada)
-            valor_entropia = calcular_entropia(imagen_procesada)
+            metrica_psnr = calcular_psnr(imagen_referencia, imagen_procesada)
+            metrica_ambe = calcular_ambe(imagen_referencia, imagen_procesada)
+            metrica_ssim = calcular_ssim(imagen_referencia, imagen_procesada)
+            metrica_contraste = calcular_contraste(imagen_procesada)
+            metrica_entropia = calcular_entropia(imagen_procesada)
 
-            # Construcción del bloque JSON por iteración
+            # Construcción del bloque JSON
             registro_resultados.append({
                 "id_imagen": nombre_salida,
                 "metodo": metodo,
                 "parametros": config["parametros"],
                 "rutas": {
-                    "original": str(ruta_imagen_original.as_posix()),
-                    "oscurecida": str(ruta_imagen_oscura.as_posix()),
-                    "procesada": str(ruta_guardado_img.as_posix())
+                    "original": str(ruta_imagen_original.relative_to(ruta_raiz_proyecto).as_posix()),
+                    "oscurecida": str(ruta_imagen_oscura.relative_to(ruta_raiz_proyecto).as_posix()),
+                    "procesada": str(ruta_guardado_img.relative_to(ruta_raiz_proyecto).as_posix())
                 },
-                "metricas": {
-                    **valor_psnr,
-                    **valor_ambe,
-                    **valor_ssim,
-                    **valor_contraste,
-                    **valor_entropia,
-                    **tiempo_ms
+                "metricas_imagen_procesada": {
+                    **metrica_psnr,
+                    **metrica_ambe,
+                    **metrica_ssim,
+                    **metrica_contraste,
+                    **metrica_entropia,
+                    **metrica_tiempo
+                },
+                "metricas_imagen_original": {
+                    **contraste_original,
+                    **entropia_original,
                 }
             })
             
-            print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {tiempo_ms['tiempo_ms']:.2f} ms")
+            print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {metrica_tiempo['tiempo_ms']:.2f} ms")
 
     # Volcado estructurado de los resultados al disco
     with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
@@ -185,8 +195,10 @@ if __name__ == "__main__":
 
     # Configuración de rutas base dinámicas
     directorio_actual = Path(__file__).parent if '__file__' in globals() else Path.cwd()
-    directorio_base_dataset = directorio_actual.parent / NOMBRE_CARPETA_DATASET
-    directorio_base_experimentos = directorio_actual.parent / NOMBRE_CARPETA_EXPERIMENTOS
+    directorio_raiz_proyecto = directorio_actual.parent
+    
+    directorio_base_dataset = directorio_raiz_proyecto / NOMBRE_CARPETA_DATASET
+    directorio_base_experimentos = directorio_raiz_proyecto / NOMBRE_CARPETA_EXPERIMENTOS
     
     # Composición de rutas de entrada (Lectura)
     ruta_entrada_originales = directorio_base_dataset / NOMBRE_CARPETA_IMG / NOMBRE_CARPETA_ORIGINAL
@@ -196,10 +208,11 @@ if __name__ == "__main__":
     ruta_salida_imagenes = directorio_base_experimentos / NOMBRE_CARPETA_IMG
     ruta_salida_archivo_json = directorio_base_experimentos / NOMBRE_CARPETA_JSON / NOMBRE_ARCHIVO_JSON
     
-    # Inyección de dependencias (rutas completas) a la función principal
+    # Inyección de dependencias a la función principal, incluyendo la raíz del proyecto
     ejecutar_pipeline_evaluacion(
         ruta_entrada_originales, 
         ruta_entrada_oscurecidas, 
         ruta_salida_imagenes, 
-        ruta_salida_archivo_json
+        ruta_salida_archivo_json,
+        directorio_raiz_proyecto
     )
