@@ -5,7 +5,16 @@ Este directorio contiene los scripts responsables de la obtención y el acondici
 ## ⚙️ Mecánica de los Scripts
 
 ### 1. `descargar_dataset.py`
-Este script establece una conexión directa con el repositorio de Zenodo. Descarga el archivo masivo `RELLISUR.zip` (8.9 GB) utilizando una estrategia de *streaming* por bloques. Esto optimiza el uso de la memoria RAM y proporciona una barra de progreso visual en la terminal.
+
+Este script establece una conexión directa con el repositorio público de Zenodo. El código descarga el archivo masivo `RELLISUR.zip` (8.9 GB) utilizando una estrategia de *streaming* por bloques. Esta técnica optimiza el uso de la memoria RAM y proporciona una barra de progreso visual en la terminal.
+
+El archivo comprimido original contiene una topología interna específica diseñada para tareas de mejora de iluminación y súper-resolución. El desglose físico interno del archivo es el siguiente:
+
+* **Particiones Base:** el dataset divide los datos en tres directorios principales: `Train/`, `Val/` y `Test/`. Cada subdirectorio contiene las siguientes dos carpetas internamente:
+    * **`LLLR/` (Low-Light Low-Resolution):** esta carpeta almacena las imágenes subexpuestas empíricas. El dataset contiene 5 niveles diferentes de oscuridad controlada por cada imagen de referencia original.
+    * **`NLHR/` (Normal-Light High-Resolution):** esta carpeta resguarda las imágenes de referencia (Verdad Terreno) capturadas con iluminación normal. Este directorio se subdivide en tres escalas de resolución espacial: `X1`, `X2` y `X4`.
+
+A nivel estadístico, el archivo bruto totaliza 850 imágenes de referencia únicas. La multiplicación por sus niveles de exposición arroja un volumen exacto de 4250 imágenes subexpuestas de entrada. Conocer esta estructura es vital, ya que los algoritmos de evaluación de este proyecto consumirán exclusivamente la escala `X1` para mantener la paridad dimensional.
 
 ### 2. `extraer_dataset.py`
 Este script evita la descompresión total del archivo en el disco. Lee directamente la tabla de contenidos del archivo ZIP en memoria y aplica una semilla matemática (`seed=42`) para garantizar un proceso determinista. 
