@@ -44,6 +44,9 @@ El código está fuertemente modularizado para separar la obtención de datos, e
 ├── evaluacion/              # Módulo principal de ejecución
 │   ├── orquestador_evaluacion.py # Motor que acopla los algoritmos con las métricas por lotes
 │   └── README.md            # Instrucciones de I/O y parámetros de reproducibilidad
+├── analisis/                # Módulo de evaluación estadística y cuantitativa
+│   ├── analisis_estadistico_resultados.ipynb # Cuaderno de Jupyter con el análisis de datos
+│   └── README.md            # Instrucciones de ejecución del análisis
 ├── dataset/                 # Directorio generado dinámicamente tras la ingesta (excluido en .gitignore)
 └── experimento/             # Directorio generado dinámicamente por el orquestador (excluido en .gitignore)
 
@@ -63,6 +66,9 @@ Los algoritmos de mejora y las funciones matemáticas operan como paquetes utili
 Esta es la fase central que orquesta los submódulos de algoritmos y métricas matemáticas. El motor de procesamiento procesa las imágenes en lote y genera automáticamente la carpeta `experimento/` en la raíz del proyecto, exportando las imágenes resultantes y el registro final `resultados_evaluacion.json` listo para el análisis estadístico posterior. 
 
 Para conocer los comandos exactos de ejecución y los parámetros de reproducibilidad del experimento, consulte la documentación específica en `evaluacion/README.md`.
+
+**Fase 5: Análisis Estadístico y Evaluación (`analisis/`)**
+Esta fase final procesa el archivo `resultados_evaluacion.json` generado por el orquestador. El módulo utiliza un cuaderno interactivo de Jupyter para calcular las mejoras relativas (deltas) y las tasas de recuperación informativa. El sistema aplica operaciones vectorizadas con Pandas para generar tablas descriptivas de las métricas evaluadas (AMBE, PSNR, Contraste, Entropía y SSIM). Este paso culmina con la aplicación de pruebas estadísticas de inferencia para validar rigurosamente el rendimiento de cada algoritmo. Para su ejecución, consulte la documentación en `analisis/README.md`.
 
 ## 👥 Autores y Colaboradores
 
