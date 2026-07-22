@@ -16,7 +16,7 @@ CLAHE divide la imagen en pequeñas regiones locales o *tiles* (por defecto de $
 * **Suavizado:** utiliza interpolación bilineal en los límites de las cuadrículas para eliminar los artefactos de bloques y las transiciones artificiales perceptibles.
 
 ### 3. BHE2PL (Bi-Histogram Equalization with Two Plateau Limits)
-Este algoritmo avanzado, introducido por [Aquino-Morinigo et al. (DOI: 10.1007/s11760-016-1032-0)](https://doi.org/10.1007/s11760-016-1032-0), divide el histograma original en dos sub-histogramas basándose en la intensidad promedio de la imagen, procesándolos de manera independiente.
+Este algoritmo avanzado, introducido por [Aquino-Morinigo et al.](https://doi.org/10.1007/s11760-016-1032-0), divide el histograma original en dos sub-histogramas basándose en la intensidad promedio de la imagen, procesándolos de manera independiente.
 * **Efecto visual:** previene la sobre-ecualización característica del método tradicional y preserva rigurosamente el brillo medio original de la captura.
 * **Control Dinámico:** calcula automáticamente cuatro límites de meseta (plateau limits) basados en la probabilidad espacial, recortando los picos del histograma sin necesidad de que el usuario introduzca hiperparámetros manuales.
 
