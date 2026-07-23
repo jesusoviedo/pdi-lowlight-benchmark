@@ -2,6 +2,7 @@
 
 Este repositorio contiene el código fuente y la metodología para evaluar y comparar técnicas de mejora de imágenes en condiciones de baja luminosidad. El proyecto utiliza una muestra determinista del dataset [RELLISUR](https://vap.aau.dk/rellisur/) para contrastar algoritmos clásicos (Ecualización de Histograma tradicional y CLAHE) y un método avanzado denominado **BHE2PL (Bi-Histogram Equalization with Two Plateau Limits)**. La comparación se realiza mediante métricas cuantitativas de error espacial, preservación de brillo y similitud estructural (PSNR, AMBE, Contraste, Entropía y SSIM).
 
+
 ## 🛠️ Configuración del Entorno (Conda)
 
 Para garantizar la reproducibilidad estricta de los experimentos, la gestión de dependencias y versiones se realiza a través de Anaconda. 
@@ -19,6 +20,7 @@ conda env create -f environment.yml
 ```bash
 conda activate tp_1
 ```
+
 
 ## 📂 Estructura del Proyecto
 
@@ -52,23 +54,20 @@ El código está fuertemente modularizado para separar la obtención de datos, e
 
 ```
 
+
 ## 🚀 Flujo de Ejecución
 
-Para replicar el experimento de principio a fin, el proyecto está diseñado en fases secuenciales. Todas las ejecuciones deben realizarse con el entorno Conda `tp_1` activado.
+Para replicar el experimento de principio a fin, el proyecto está diseñado en tres pasos secuenciales. Todas las ejecuciones deben realizarse con el entorno Conda `tp_1` activado.
 
-**Fase 1: Obtención y Preparación de Datos (`ingesta/`)**
-Dirígete a la carpeta `ingesta/` y ejecuta los scripts para descargar el dataset masivo de Zenodo y extraer una muestra estadística representativa (850 pares únicos) aplicando una semilla reproducible matemática (`seed=42`).
+**Paso 1: Obtención y Preparación de Datos (`ingesta/`)**
+Navegue a la carpeta `ingesta/`. Los scripts contenidos allí se encargan de descargar el dataset masivo desde Zenodo y de extraer una muestra estadística reproducible de 850 pares de imágenes. Consulte el documento `ingesta/README.md` para conocer los comandos exactos de ejecución.
 
-**Fase 2 y 3: Configuración de Realce (`realce/`) y Métricas (`metricas/`)**
-Los algoritmos de mejora y las funciones matemáticas operan como paquetes utilitarios. No requieren ejecución manual independiente, pero puedes consultar sus respectivos `README.md` para verificar los hiperparámetros (ejemplo: `clip_limit=2.0` para CLAHE) y las implementaciones vectorizadas.
+**Paso 2: Ejecución del Experimento (`evaluacion/`)**
+Navegue a la carpeta `evaluacion/` y ejecute el orquestador principal. Este componente importa los algoritmos del módulo `realce/` y las funciones matemáticas del módulo `metricas/`. El sistema procesa las imágenes por lotes, guarda los resultados visuales en la carpeta `experimento/img` y genera el registro de evaluación en `experimento/json/resultados_evaluacion.json`. Consulte el documento `evaluacion/README.md` para conocer los comandos exactos de ejecución.
 
-**Fase 4: Ejecución del Experimento (`evaluacion/`)**
-Esta es la fase central que orquesta los submódulos de algoritmos y métricas matemáticas. El motor de procesamiento procesa las imágenes en lote y genera automáticamente la carpeta `experimento/` en la raíz del proyecto, exportando las imágenes resultantes y el registro final `resultados_evaluacion.json` listo para el análisis estadístico posterior. 
+**Paso 3: Análisis Estadístico y Evaluación (`analisis/`)**
+Navegue a la carpeta `analisis/` e inicie la interfaz interactiva de Jupyter Lab. Este directorio contiene el cuaderno que procesa el archivo JSON generado en el paso anterior. El cuaderno ejecuta código que aplica operaciones matriciales con Pandas para calcular métricas relativas y generar las tablas de resultados. El análisis culmina con la ejecución de pruebas de inferencia estadística (Kruskal-Wallis) para validar matemáticamente el rendimiento de los algoritmos.
 
-Para conocer los comandos exactos de ejecución y los parámetros de reproducibilidad del experimento, consulte la documentación específica en `evaluacion/README.md`.
-
-**Fase 5: Análisis Estadístico y Evaluación (`analisis/`)**
-Esta fase final procesa el archivo `resultados_evaluacion.json` generado por el orquestador. El módulo utiliza un cuaderno interactivo de Jupyter para calcular las mejoras relativas (deltas) y las tasas de recuperación informativa. El sistema aplica operaciones vectorizadas con Pandas para generar tablas descriptivas de las métricas evaluadas (AMBE, PSNR, Contraste, Entropía y SSIM). Este paso culmina con la aplicación de pruebas estadísticas de inferencia para validar rigurosamente el rendimiento de cada algoritmo. Para su ejecución, consulte la documentación en `analisis/README.md`.
 
 ## 👥 Autores y Colaboradores
 
