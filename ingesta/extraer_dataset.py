@@ -2,41 +2,108 @@ import zipfile
 import random
 import argparse
 from pathlib import Path
+from tqdm import tqdm
 
-def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semilla_aleatoria, eliminar_zip=False):
+def procesar_argumentos_linea_comandos():
     """
-    Extrae un muestreo aleatorio reproducible de pares de imágenes del dataset.
+    Parsea y valida los argumentos pasados por la línea de comandos.
+
+    Configura el analizador de argumentos para recibir las opciones de ejecución
+    relacionadas con la extracción de pares del dataset RELLISUR.
+
+    Returns:
+        argparse.Namespace: Objeto con los argumentos parseados y validados.
+    """
+    analizador = argparse.ArgumentParser(
+        description="Extrae una muestra estadística del dataset RELLISUR."
+    )
+
+    analizador.add_argument(
+        "--eliminar-zip", 
+        action="store_true", 
+        help="Elimina el archivo ZIP original tras la extracción."
+    )
+
+    analizador.add_argument(
+        "-n", "--cantidad", 
+        type=int, 
+        default=850, 
+        help="Cantidad de pares a extraer. Máximo soportado: 850."
+    )
+
+    return analizador.parse_args()
+
+
+def validar_cantidad_muestras(cantidad_solicitada, maxima_cantidad):
+    """
+    Valida que la cantidad de muestras solicitada no exceda el límite máximo 
+    permitido por el dataset.
+
+    Si la cantidad solicitada supera el umbral máximo soportado, ajusta el valor 
+    al límite superior y emite un aviso por consola. De lo contrario, respeta 
+    la cantidad especificada.
+
+    Args:
+        cantidad_solicitada: Entero que representa la cantidad de pares pedidos.
+        maxima_cantidad: Entero que representa el límite superior soportado.
+
+    Returns:
+        Entero con la cantidad final de muestras a extraer.
+    """
+    if cantidad_solicitada > maxima_cantidad:
+        print(f"Aviso: Se solicitaron {cantidad_solicitada} pares, pero el máximo sponible es {maxima_cantidad}.")
+        return maxima_cantidad
+    
+    return cantidad_solicitada
+
+
+def extraer_pares_dataset(
+    ruta_zip, 
+    directorio_salida, 
+    cantidad_muestras, 
+    semilla_aleatoria, 
+    nombre_carpeta_img, 
+    nombre_carpeta_orig, 
+    nombre_carpeta_osc, 
+    eliminar_zip=False
+):
+    """
+    Extrae un muestreo aleatorio reproducible de pares de imágenes del dataset 
+    mostrando una barra de progreso interactiva.
 
     Agrupa todas las variantes de subexposición (LLLR) para cada imagen original (NLHR) 
     y selecciona una al azar de forma determinista (usando la semilla). Aplica una 
     re-indexación secuencial global (ej. 0001.png) para mantener paridad estricta.
 
     Args:
-        ruta_zip (Path): Objeto Path que apunta al archivo ZIP del dataset.
-        directorio_salida (Path): Objeto Path que indica la carpeta raíz donde se crearán 
+        ruta_zip: Objeto Path que apunta al archivo ZIP del dataset.
+        directorio_salida: Objeto Path que indica la carpeta raíz donde se crearán 
             las subcarpetas de imágenes.
-        cantidad_muestras (int): Entero que define la cantidad máxima de pares a extraer.
-        semilla_aleatoria (int): Entero utilizado para fijar el estado del generador de 
-            números aleatorios (garantiza la reproducibilidad de los experimentos).
-        eliminar_zip (bool, optional): Si es Verdadero, elimina el archivo comprimido tras 
-            finalizar la extracción. Por defecto es False.
+        cantidad_muestras: Entero que define la cantidad máxima de pares a extraer.
+        semilla_aleatoria: Entero utilizado para fijar el estado del generador de 
+            números aleatorios.
+        nombre_carpeta_img: Nombre de la carpeta contenedora de imágenes.
+        nombre_carpeta_orig: Nombre de la subcarpeta para imágenes originales.
+        nombre_carpeta_osc: Nombre de la subcarpeta para imágenes oscurecidas.
+        eliminar_zip: Booleano que si es verdadero, elimina el archivo comprimido tras 
+            finalizar la extracción. Por defecto es falso.
 
     Returns:
-        bool: Verdadero si la operación de extracción finalizó con éxito, Falso si ocurrió 
-            un error crítico (ejemplo: archivo no encontrado).
+        Booleano que indica verdadero si la operación finalizó con éxito, 
+        falso si ocurrió un error crítico.
     """
     if not ruta_zip.exists():
         print(f"Error crítico: El archivo comprimido no existe en {ruta_zip}")
         return False
 
-    carpeta_img = directorio_salida / "img"
-    carpeta_original = carpeta_img / "original"
-    carpeta_oscurecida = carpeta_img / "oscurecida"
+    carpeta_img = directorio_salida / nombre_carpeta_img
+    carpeta_original = carpeta_img / nombre_carpeta_orig
+    carpeta_oscurecida = carpeta_img / nombre_carpeta_osc
 
     carpeta_original.mkdir(parents=True, exist_ok=True)
     carpeta_oscurecida.mkdir(parents=True, exist_ok=True)
 
-    print(f"Abriendo el archivo {ruta_zip.name} para extracción en memoria...")
+    print(f"Abriendo el archivo {ruta_zip.name} para escaneo en memoria...")
     
     with zipfile.ZipFile(ruta_zip, 'r') as archivo_comprimido:
         todos_los_archivos = archivo_comprimido.namelist()
@@ -56,7 +123,6 @@ def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semill
                 if clave_unica not in diccionario_lllr:
                     diccionario_lllr[clave_unica] = []
                 
-                # Guardamos todas las rutas de las variantes (ej. -1.5, -2.5, etc.)
                 diccionario_lllr[clave_unica].append(ruta)
                 
             elif "NLHR" in ruta and "X1" in ruta and not ruta.endswith('/'):
@@ -68,17 +134,16 @@ def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semill
             print("No se encontraron imágenes en la subruta especificada (NLHR/X1).")
             return False
 
-        # Inicializamos la semilla matemática
         random.seed(semilla_aleatoria)
         
         cantidad_a_extraer = min(cantidad_muestras, len(rutas_originales_disponibles))
-        print(f"[*] Procediendo a extraer {cantidad_a_extraer} pares únicos (1 variante aleatoria por par)...")
+        print(f"Procediendo a extraer {cantidad_a_extraer} pares únicos...")
         seleccion_originales = random.sample(rutas_originales_disponibles, cantidad_a_extraer)
 
         pares_procesados = 0
 
-        # 2. Extracción O(1) con selección aleatoria determinista
-        for ruta_original in seleccion_originales:
+        # 2. Extracción O(1) iterando con tqdm para la barra de progreso
+        for ruta_original in tqdm(seleccion_originales, desc="Extrayendo imágenes", unit="par"):
             particion = "Train" if "Train" in ruta_original else ("Val" if "Val" in ruta_original else ("Test" if "Test" in ruta_original else "Extra"))
             prefijo_original = Path(ruta_original).stem 
             
@@ -86,13 +151,11 @@ def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semill
             lista_variantes = diccionario_lllr.get(clave_unica)
             
             if lista_variantes:
-                # Elegimos 1 nivel de oscuridad al azar de la lista (reproducible por el random.seed)
                 ruta_oscurecida_esperada = random.choice(lista_variantes)
                 
                 contenido_original = archivo_comprimido.read(ruta_original)
                 contenido_oscurecido = archivo_comprimido.read(ruta_oscurecida_esperada)
 
-                # Nomenclatura: Formato de 4 dígitos para fácil iteración (0001.png, 0002.png...)
                 nuevo_nombre_archivo = f"{(pares_procesados + 1):04d}.png"
                 
                 ruta_destino_original = carpeta_original / nuevo_nombre_archivo
@@ -105,55 +168,46 @@ def extraer_pares_dataset(ruta_zip, directorio_salida, cantidad_muestras, semill
                     archivo_salida_oscurecida.write(contenido_oscurecido)
                 
                 pares_procesados += 1
-            else:
-                print(f"Advertencia: No se encontró variante LLLR para la clave {clave_unica}")
 
-    print(f"Extracción finalizada exitosamente: {pares_procesados} pares guardados en {carpeta_img}.")
+    print(f"\nExtracción finalizada exitosamente: {pares_procesados} pares guardados.")
     
     if eliminar_zip:
         try:
             ruta_zip.unlink()
             print(f"Limpieza: Archivo {ruta_zip.name} eliminado del disco exitosamente.")
-        except Exception as e:
-            print(f"Advertencia: No se pudo eliminar el archivo {ruta_zip.name}. Detalle: {e}")
+        except Exception as error_limpieza:
+            print(f"Advertencia: No se pudo eliminar el archivo {ruta_zip.name}. Detalle: {error_limpieza}")
 
     return True
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Extrae una muestra estadística del dataset RELLISUR.")
-    parser.add_argument(
-        "--eliminar-zip", 
-        action="store_true", 
-        help="Incluye esta bandera para eliminar el archivo ZIP original tras la extracción."
-    )
-    # Nuevo argumento para definir la cantidad por consola
-    parser.add_argument(
-        "-n", "--cantidad", 
-        type=int, 
-        default=850, 
-        help="Cantidad de pares a extraer. Máximo soportado: 850."
-    )
-    args = parser.parse_args()
+    NOMBRE_ARCHIVO_DATASET_ZIP = "RELLISUR.zip"
+    NOMBRE_CARPETA_DATASET_RAIZ = "dataset"
+    NOMBRE_CARPETA_CONTENEDOR_IMAGENES = "img"
+    NOMBRE_CARPETA_ORIGINALES = "original"
+    NOMBRE_CARPETA_OSCURECIDAS = "oscurecida"
+
+    argumentos = procesar_argumentos_linea_comandos()
 
     directorio_script = Path(__file__).parent if '__file__' in globals() else Path.cwd()
-    carpeta_dataset = directorio_script.parent / "dataset"
-    ruta_archivo_zip = carpeta_dataset / "RELLISUR.zip"
+    carpeta_dataset = directorio_script.parent / NOMBRE_CARPETA_DATASET_RAIZ
+    ruta_archivo_zip = carpeta_dataset / NOMBRE_ARCHIVO_DATASET_ZIP
     
     semilla_reproducibilidad = 42
-    MAX_CANTIDAD_IMAGENES = 850
+    maxima_cantidad_imagenes = 850
 
-    # Lógica de validación del límite superior
-    if args.cantidad > MAX_CANTIDAD_IMAGENES:
-        print(f"[*] Aviso: Solicitaste {args.cantidad} pares, pero el dataset contiene un máximo de {MAX_CANTIDAD_IMAGENES} imágenes originales únicas.")
-        print(f"[*] El script extraerá el límite máximo disponible ({MAX_CANTIDAD_IMAGENES}).")
-        cantidad_imagenes_a_extraer = MAX_CANTIDAD_IMAGENES
-    else:
-        cantidad_imagenes_a_extraer = args.cantidad
+    cantidad_imagenes_a_extraer = validar_cantidad_muestras(
+        argumentos.cantidad, 
+        maxima_cantidad_imagenes
+    )
 
     extraer_pares_dataset(
         ruta_zip=ruta_archivo_zip,
         directorio_salida=carpeta_dataset,
         cantidad_muestras=cantidad_imagenes_a_extraer,
         semilla_aleatoria=semilla_reproducibilidad,
-        eliminar_zip=args.eliminar_zip
+        nombre_carpeta_img=NOMBRE_CARPETA_CONTENEDOR_IMAGENES,
+        nombre_carpeta_orig=NOMBRE_CARPETA_ORIGINALES,
+        nombre_carpeta_osc=NOMBRE_CARPETA_OSCURECIDAS,
+        eliminar_zip=argumentos.eliminar_zip
     )
