@@ -1,6 +1,6 @@
 # Evaluación de Algoritmos para la Mejora de Imágenes Subexpuestas
 
-Este repositorio contiene el código fuente y la metodología para evaluar y comparar técnicas de mejora de imágenes en condiciones de baja luminosidad. El proyecto utiliza una muestra determinista del dataset [RELLISUR](https://vap.aau.dk/rellisur/) para contrastar algoritmos clásicos (Ecualización de Histograma tradicional y CLAHE) y un método avanzado denominado **BHE2PL (Bi-Histogram Equalization with Two Plateau Limits)**. La comparación se realiza mediante métricas cuantitativas de error espacial, preservación de brillo y similitud estructural (PSNR, AMBE, Contraste, Entropía y SSIM).
+Este repositorio contiene el código fuente y la metodología para evaluar y comparar técnicas de mejora de imágenes en condiciones de baja luminosidad. El proyecto utiliza una muestra determinista del dataset [RELLISUR](https://vap.aau.dk/rellisur/) para contrastar algoritmos clásicos (Ecualización de Histograma tradicional y CLAHE) y un algoritmo denominado **BHE2PL (Bi-Histogram Equalization with Two Plateau Limits)**. La comparación se realiza mediante métricas cuantitativas de error espacial, preservación de brillo y similitud estructural (PSNR, AMBE, Contraste, Entropía y SSIM).
 
 
 ## 🛠️ Configuración del Entorno (Conda)
