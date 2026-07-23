@@ -12,7 +12,10 @@ Su función es acoplar dinámicamente los algoritmos de realce con las métricas
 ## Instrucciones de Ejecución
 
 El script utiliza resolución de rutas relativas dinámicas. Asegúrese de activar su entorno virtual y de ubicarse en la **raíz del proyecto**. Ejecute el orquestador con el siguiente comando:
-`python evaluacion/orquestador_evaluacion.py`
+
+```bash
+python evaluacion/orquestador_evaluacion.py
+```
 
 ## Flujo de Datos (I/O)
 
