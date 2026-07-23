@@ -6,7 +6,7 @@ Su función es acoplar dinámicamente los algoritmos de realce con las métricas
 
 ## Requisitos Previos
 
-1. Haber completado la **Fase 1** (descarga y extracción del dataset) utilizando los scripts de la carpeta `ingesta/`.
+1. Haber completado la **Paso 1** (descarga y extracción del dataset) utilizando los scripts de la carpeta `ingesta/`.
 2. Tener activado el entorno virtual del proyecto.
 
 ## Instrucciones de Ejecución
