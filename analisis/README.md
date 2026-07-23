@@ -26,7 +26,7 @@ El flujo de ejecución genera cuatro tablas analíticas fundamentales:
 
 Para ejecutar este módulo de análisis estadístico, es estrictamente necesario cumplir con las siguientes dependencias del proyecto:
 
-1. Haber completado la **Fase 4 (Ejecución del Experimento)** utilizando el orquestador del directorio `evaluacion/`. Este paso genera el archivo `resultados_evaluacion.json` requerido por el cuaderno.
+1. Haber completado la **Paso 2 (Ejecución del Experimento)** utilizando el orquestador del directorio `evaluacion/`. Este paso genera el archivo `resultados_evaluacion.json` requerido por el cuaderno.
 2. Tener activado el entorno virtual global del proyecto (`tp_1`).
 
 ## Instrucciones de Ejecución
