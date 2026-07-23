@@ -1,6 +1,6 @@
 # Módulo de Orquestación y Evaluación
 
-Este directorio contiene el script `orquestador_evaluacion_3.py`. Este script actúa como el motor principal de la **Fase 2 (Procesamiento)** y **Fase 3 (Evaluación)** descritas en la documentación general del proyecto. 
+Este directorio contiene el script `orquestador_evaluacion.py`. Este script actúa como el motor principal de la **Fase 2 (Procesamiento)** y **Fase 3 (Evaluación)** descritas en la documentación general del proyecto. 
 
 Su función es acoplar dinámicamente los algoritmos de realce con las métricas de evaluación matemática (AMBE, PSNR, Contraste, Entropía y SSIM). El script ejecuta los experimentos por lotes sobre el dataset seleccionado.
 
@@ -12,7 +12,7 @@ Su función es acoplar dinámicamente los algoritmos de realce con las métricas
 ## Instrucciones de Ejecución
 
 El script utiliza resolución de rutas relativas dinámicas. Asegúrese de activar su entorno virtual y de ubicarse en la **raíz del proyecto**. Ejecute el orquestador con el siguiente comando:
-`python evaluacion/orquestador_evaluacion_3.py`
+`python evaluacion/orquestador_evaluacion.py`
 
 ## Flujo de Datos (I/O)
 
