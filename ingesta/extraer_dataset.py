@@ -44,17 +44,128 @@ def validar_cantidad_muestras(cantidad_solicitada, maxima_cantidad):
     la cantidad especificada.
 
     Args:
-        cantidad_solicitada: Entero que representa la cantidad de pares pedidos.
-        maxima_cantidad: Entero que representa el límite superior soportado.
+        cantidad_solicitada (int): Entero que representa la cantidad de pares pedidos.
+        maxima_cantidad (int): Entero que representa el límite superior soportado.
 
     Returns:
-        Entero con la cantidad final de muestras a extraer.
+        int: Entero con la cantidad final de muestras a extraer.
     """
     if cantidad_solicitada > maxima_cantidad:
-        print(f"Aviso: Se solicitaron {cantidad_solicitada} pares, pero el máximo sponible es {maxima_cantidad}.")
+        print(f"Aviso: Se solicitaron {cantidad_solicitada} pares, pero el máximo disponible es {maxima_cantidad}.")
         return maxima_cantidad
     
     return cantidad_solicitada
+
+
+def escanear_y_agrupar_archivos_zip(todos_los_archivos):
+    """
+    Escanea la lista de rutas dentro del archivo comprimido para agrupar las 
+    variantes de subexposición (LLLR) y recopilar las imágenes originales (NLHR).
+
+    Args:
+        todos_los_archivos (list): Lista de cadenas que representan las rutas internas del archivo ZIP.
+
+    Returns:
+        tuple: Una tupla compuesta por:
+            - diccionario_lllr (dict): Diccionario que relaciona claves únicas con sus listas de rutas LLLR.
+            - rutas_originales_disponibles (list): Lista ordenada con las rutas de las imágenes originales válidas.
+    """
+    rutas_originales_disponibles = []
+    diccionario_lllr = {}
+
+    for ruta in todos_los_archivos:
+        if "LLLR" in ruta and not ruta.endswith('/'):
+            particion = "Train" if "Train" in ruta else ("Val" if "Val" in ruta else ("Test" if "Test" in ruta else "Extra"))
+            nombre_archivo = Path(ruta).stem        
+            prefijo = nombre_archivo.split('-')[0]  
+            
+            clave_unica = f"{particion}_{prefijo}"  
+            
+            if clave_unica not in diccionario_lllr:
+                diccionario_lllr[clave_unica] = []
+            
+            diccionario_lllr[clave_unica].append(ruta)
+            
+        elif "NLHR" in ruta and "X1" in ruta and not ruta.endswith('/'):
+            rutas_originales_disponibles.append(ruta)
+
+    rutas_originales_disponibles.sort()
+
+    return diccionario_lllr, rutas_originales_disponibles
+
+
+def extraer_y_guardar_pares_imagenes(
+    seleccion_originales, 
+    diccionario_lllr, 
+    archivo_comprimido, 
+    carpeta_original, 
+    carpeta_oscurecida
+):
+    """
+    Extrae, re-indexa y guarda en disco los pares de imágenes seleccionadas 
+    mostrando una barra de progreso interactiva.
+
+    Args:
+        seleccion_originales (list): Lista de rutas de las imágenes originales seleccionadas.
+        diccionario_lllr (dict): Diccionario con las rutas de las variantes oscurecidas agrupadas.
+        archivo_comprimido (zipfile.ZipFile): Objeto abierto del archivo ZIP del dataset.
+        carpeta_original (Path): Directorio de destino para las imágenes originales.
+        carpeta_oscurecida (Path): Directorio de destino para las imágenes oscurecidas.
+
+    Returns:
+        int: Cantidad total de pares procesados y guardados exitosamente.
+    """
+    pares_procesados = 0
+
+    for ruta_original in tqdm(seleccion_originales, desc="Extrayendo imágenes", unit="par"):
+        particion = "Train" if "Train" in ruta_original else ("Val" if "Val" in ruta_original else ("Test" if "Test" in ruta_original else "Extra"))
+        prefijo_original = Path(ruta_original).stem 
+        
+        clave_unica = f"{particion}_{prefijo_original}" 
+        lista_variantes = diccionario_lllr.get(clave_unica)
+        
+        if lista_variantes:
+            ruta_oscurecida_esperada = random.choice(lista_variantes)
+            
+            contenido_original = archivo_comprimido.read(ruta_original)
+            contenido_oscurecido = archivo_comprimido.read(ruta_oscurecida_esperada)
+
+            nuevo_nombre_archivo = f"{(pares_procesados + 1):04d}.png"
+            
+            ruta_destino_original = carpeta_original / nuevo_nombre_archivo
+            ruta_destino_oscurecida = carpeta_oscurecida / nuevo_nombre_archivo
+
+            with open(ruta_destino_original, 'wb') as archivo_salida_original:
+                archivo_salida_original.write(contenido_original)
+            
+            with open(ruta_destino_oscurecida, 'wb') as archivo_salida_oscurecida:
+                archivo_salida_oscurecida.write(contenido_oscurecido)
+            
+            pares_procesados += 1
+
+    return pares_procesados
+
+
+def eliminar_archivo_zip(ruta_zip, eliminar_zip):
+    """
+    Elimina de forma segura el archivo comprimido del disco si se ha 
+    solicitado explícitamente mediante los parámetros de ejecución.
+
+    Args:
+        ruta_zip (Path): Objeto Path que apunta al archivo ZIP del dataset.
+        eliminar_zip (bool): Booleano que indica si se debe proceder con la eliminación.
+
+    Returns:
+        bool: Retorna siempre verdadero para mantener la continuidad del flujo lógico.
+    """
+    if eliminar_zip:
+        try:
+            ruta_zip.unlink()
+            print(f"Limpieza: Archivo {ruta_zip.name} eliminado del disco exitosamente.")
+        except Exception as error_limpieza:
+            print(f"Advertencia: No se pudo eliminar el archivo {ruta_zip.name}. Detalle: {error_limpieza}")
+
+    return True
 
 
 def extraer_pares_dataset(
@@ -76,109 +187,69 @@ def extraer_pares_dataset(
     re-indexación secuencial global (ej. 0001.png) para mantener paridad estricta.
 
     Args:
-        ruta_zip: Objeto Path que apunta al archivo ZIP del dataset.
-        directorio_salida: Objeto Path que indica la carpeta raíz donde se crearán 
+        ruta_zip (Path): Objeto Path que apunta al archivo ZIP del dataset.
+        directorio_salida (Path): Objeto Path que indica la carpeta raíz donde se crearán 
             las subcarpetas de imágenes.
-        cantidad_muestras: Entero que define la cantidad máxima de pares a extraer.
-        semilla_aleatoria: Entero utilizado para fijar el estado del generador de 
+        cantidad_muestras (int): Entero que define la cantidad máxima de pares a extraer.
+        semilla_aleatoria (int): Entero utilizado para fijar el estado del generador de 
             números aleatorios.
-        nombre_carpeta_img: Nombre de la carpeta contenedora de imágenes.
-        nombre_carpeta_orig: Nombre de la subcarpeta para imágenes originales.
-        nombre_carpeta_osc: Nombre de la subcarpeta para imágenes oscurecidas.
-        eliminar_zip: Booleano que si es verdadero, elimina el archivo comprimido tras 
+        nombre_carpeta_img (str): Nombre de la carpeta contenedora de imágenes.
+        nombre_carpeta_orig (str): Nombre de la subcarpeta para imágenes originales.
+        nombre_carpeta_osc (str): Nombre de la subcarpeta para imágenes oscurecidas.
+        eliminar_zip (bool, optional): Booleano que si es verdadero, elimina el archivo comprimido tras 
             finalizar la extracción. Por defecto es falso.
 
     Returns:
-        Booleano que indica verdadero si la operación finalizó con éxito, 
+        bool: Booleano que indica verdadero si la operación finalizó con éxito, 
         falso si ocurrió un error crítico.
     """
     if not ruta_zip.exists():
         print(f"Error crítico: El archivo comprimido no existe en {ruta_zip}")
         return False
 
+    # Crear la estructura de carpetas de salida
     carpeta_img = directorio_salida / nombre_carpeta_img
     carpeta_original = carpeta_img / nombre_carpeta_orig
     carpeta_oscurecida = carpeta_img / nombre_carpeta_osc
 
+    # Crear las carpetas si no existen
     carpeta_original.mkdir(parents=True, exist_ok=True)
     carpeta_oscurecida.mkdir(parents=True, exist_ok=True)
 
     print(f"Abriendo el archivo {ruta_zip.name} para escaneo en memoria...")
     
     with zipfile.ZipFile(ruta_zip, 'r') as archivo_comprimido:
+        # Escaneo y agrupamiento de rutas internas
         todos_los_archivos = archivo_comprimido.namelist()
-        
-        rutas_originales_disponibles = []
-        diccionario_lllr = {}
+        diccionario_lllr, rutas_originales_disponibles = escanear_y_agrupar_archivos_zip(todos_los_archivos)
 
-        # 1. Escaneo inicial: Agrupamos todas las variantes de oscuridad en listas
-        for ruta in todos_los_archivos:
-            if "LLLR" in ruta and not ruta.endswith('/'):
-                particion = "Train" if "Train" in ruta else ("Val" if "Val" in ruta else ("Test" if "Test" in ruta else "Extra"))
-                nombre_archivo = Path(ruta).stem        
-                prefijo = nombre_archivo.split('-')[0]  
-                
-                clave_unica = f"{particion}_{prefijo}"  
-                
-                if clave_unica not in diccionario_lllr:
-                    diccionario_lllr[clave_unica] = []
-                
-                diccionario_lllr[clave_unica].append(ruta)
-                
-            elif "NLHR" in ruta and "X1" in ruta and not ruta.endswith('/'):
-                rutas_originales_disponibles.append(ruta)
-
-        rutas_originales_disponibles.sort()
-
+        # Validación de disponibilidad de imágenes originales
         if not rutas_originales_disponibles:
             print("No se encontraron imágenes en la subruta especificada (NLHR/X1).")
             return False
 
+        # Configuración de la semilla para reproducibilidad y selección aleatoria
         random.seed(semilla_aleatoria)
-        
         cantidad_a_extraer = min(cantidad_muestras, len(rutas_originales_disponibles))
         print(f"Procediendo a extraer {cantidad_a_extraer} pares únicos...")
         seleccion_originales = random.sample(rutas_originales_disponibles, cantidad_a_extraer)
 
-        pares_procesados = 0
-
-        # 2. Extracción O(1) iterando con tqdm para la barra de progreso
-        for ruta_original in tqdm(seleccion_originales, desc="Extrayendo imágenes", unit="par"):
-            particion = "Train" if "Train" in ruta_original else ("Val" if "Val" in ruta_original else ("Test" if "Test" in ruta_original else "Extra"))
-            prefijo_original = Path(ruta_original).stem 
-            
-            clave_unica = f"{particion}_{prefijo_original}" 
-            lista_variantes = diccionario_lllr.get(clave_unica)
-            
-            if lista_variantes:
-                ruta_oscurecida_esperada = random.choice(lista_variantes)
-                
-                contenido_original = archivo_comprimido.read(ruta_original)
-                contenido_oscurecido = archivo_comprimido.read(ruta_oscurecida_esperada)
-
-                nuevo_nombre_archivo = f"{(pares_procesados + 1):04d}.png"
-                
-                ruta_destino_original = carpeta_original / nuevo_nombre_archivo
-                ruta_destino_oscurecida = carpeta_oscurecida / nuevo_nombre_archivo
-
-                with open(ruta_destino_original, 'wb') as archivo_salida_original:
-                    archivo_salida_original.write(contenido_original)
-                
-                with open(ruta_destino_oscurecida, 'wb') as archivo_salida_oscurecida:
-                    archivo_salida_oscurecida.write(contenido_oscurecido)
-                
-                pares_procesados += 1
+        # Extracción y guardado de pares de imágenes con barra de progreso
+        pares_procesados = extraer_y_guardar_pares_imagenes(
+            seleccion_originales,
+            diccionario_lllr,
+            archivo_comprimido,
+            carpeta_original,
+            carpeta_oscurecida
+        )
 
     print(f"\nExtracción finalizada exitosamente: {pares_procesados} pares guardados.")
     
-    if eliminar_zip:
-        try:
-            ruta_zip.unlink()
-            print(f"Limpieza: Archivo {ruta_zip.name} eliminado del disco exitosamente.")
-        except Exception as error_limpieza:
-            print(f"Advertencia: No se pudo eliminar el archivo {ruta_zip.name}. Detalle: {error_limpieza}")
+    # Eliminación opcional del archivo ZIP original si se solicitó
+    eliminar_archivo_zip(ruta_zip, eliminar_zip)
 
     return True
+
 
 if __name__ == "__main__":
     NOMBRE_ARCHIVO_DATASET_ZIP = "RELLISUR.zip"
