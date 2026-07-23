@@ -33,7 +33,6 @@ Asegúrate de ejecutar estos comandos desde la **raíz del proyecto** con tu ent
 **Paso 1: Descargar los datos brutos**
 ```bash
 python ingesta/descargar_dataset.py
-
 ```
 
 **Paso 2: Extraer la muestra de evaluación**
@@ -42,7 +41,6 @@ Puedes realizar la extracción del dataset completo (850 pares por defecto):
 
 ```bash
 python ingesta/extraer_dataset.py
-
 ```
 
 > **💡 Nota del Proyecto:** Esta ejecución por defecto (850 pares) es el comando exacto que se utilizó para generar la muestra oficial sobre la cual se calcularon las métricas.
