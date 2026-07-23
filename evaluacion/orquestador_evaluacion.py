@@ -42,6 +42,48 @@ def verificar_existencia_directorios(ruta_originales, ruta_oscurecidas):
     print("Pre-chequeo exitoso: Los directorios de entrada están listos y accesibles.")
 
 
+def obtener_configuraciones_experimentos():
+    """
+    Retorna la lista estructurada con las configuraciones de los experimentos 
+    de mejora de imagen a evaluar en el pipeline.
+
+    Cada diccionario incluye el identificador único del método, la referencia 
+    a la función algorítmica correspondiente y los hiperparámetros utilizados 
+    para garantizar la reproducibilidad del estudio.
+
+    Returns:
+        list: Colección de diccionarios que definen los experimentos algorítmicos.
+    """
+    configuraciones = [
+        {
+            "id_metodo": "HE_Global",
+            "funcion": aplicar_ecualizacion_global,
+            "parametros": {}
+        },
+        {
+            "id_metodo": "CLAHE_2_8",
+            "funcion": lambda img: aplicar_clahe(img, limite_recorte=2.0, tamano_cuadricula=(8, 8)),
+            "parametros": {"limite_contraste": 2.0, "tamano_cuadricula": [8, 8]}
+        },
+        {
+            "id_metodo": "CLAHE_2_4",
+            "funcion": lambda img: aplicar_clahe(img, limite_recorte=2.0, tamano_cuadricula=(4, 4)),
+            "parametros": {"limite_contraste": 2.0, "tamano_cuadricula": [4, 4]}
+        },
+        {
+            "id_metodo": "CLAHE_4_8",
+            "funcion": lambda img: aplicar_clahe(img, limite_recorte=4.0, tamano_cuadricula=(8, 8)),
+            "parametros": {"limite_contraste": 4.0, "tamano_cuadricula": [8, 8]}
+        },
+        {
+            "id_metodo": "BHE2PL",
+            "funcion": aplicar_bhe2pl,
+            "parametros": {}
+        }
+    ]
+    return configuraciones
+
+
 def leer_imagen_robusto(ruta_imagen):
     """
     Lee una imagen desde el disco soportando caracteres especiales en la ruta.
@@ -111,37 +153,20 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
     """
     # Crear estructura de directorios de salida dinámicamente
     ruta_salida_img.mkdir(parents=True, exist_ok=True)
+
     # Crea la carpeta padre del archivo JSON dinámicamente si no existe
     ruta_archivo_json.parent.mkdir(parents=True, exist_ok=True)
 
-    # Definición modular de los experimentos
-    configuraciones_experimentos = [
-        {
-            "id_metodo": "HE_Global",
-            "funcion": aplicar_ecualizacion_global,
-            "parametros": {}
-        },
-        {
-            "id_metodo": "CLAHE_2_8",
-            "funcion": lambda img: aplicar_clahe(img, limite_recorte=2.0, tamano_cuadricula=(8, 8)),
-            "parametros": {"limite_contraste": 2.0, "tamano_cuadricula": [8, 8]}
-        },
-                {
-            "id_metodo": "CLAHE_2_4",
-            "funcion": lambda img: aplicar_clahe(img, limite_recorte=2.0, tamano_cuadricula=(4, 4)),
-            "parametros": {"limite_contraste": 2.0, "tamano_cuadricula": [4, 4]}
-        },
-                {
-            "id_metodo": "CLAHE_4_8",
-            "funcion": lambda img: aplicar_clahe(img, limite_recorte=4.0, tamano_cuadricula=(8, 8)),
-            "parametros": {"limite_contraste": 4.0, "tamano_cuadricula": [8, 8]}
-        },
-        {
-            "id_metodo": "BHE2PL",
-            "funcion": aplicar_bhe2pl,
-            "parametros": {}
-        }
-    ]
+    # Obtener la lista de configuraciones de experimentos a evaluar
+    configuraciones_experimentos = obtener_configuraciones_experimentos()
+
+    # Contar el total de imágenes y métodos para calcular el progreso
+    total_imagenes = sum(1 for _ in ruta_oscurecidas.glob("*.png"))
+    total_metodos = len(configuraciones_experimentos)
+
+    # Inicialización de variables de progreso
+    total_pasos = total_imagenes * total_metodos
+    paso_actual = 0
 
     registro_resultados = []
 
@@ -172,6 +197,10 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
         entropia_oscurecida = calcular_entropia(imagen_oscura)
 
         for config in configuraciones_experimentos:
+            # Incremento del contador de pasos y cálculo del porcentaje de avance
+            paso_actual += 1
+            porcentaje_avance = (paso_actual / total_pasos) * 100
+
             metodo = config["id_metodo"]
             
             # Ejecución algorítmica y perfilado de tiempo
@@ -221,13 +250,13 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
                 }
             })
             
-            print(f"Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {metrica_tiempo_procesada['tiempo_ms']:.2f} ms")
+            # Volcado estructurado de los resultados al disco
+            with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
+                json.dump(registro_resultados, archivo_json, indent=2, ensure_ascii=False)
 
-    # Volcado estructurado de los resultados al disco
-    with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
-        json.dump(registro_resultados, archivo_json, indent=2, ensure_ascii=False)
+            print(f"{porcentaje_avance:5.1f}% - Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {metrica_tiempo_procesada['tiempo_ms']:.2f} ms")
         
-    print(f"\nEvaluación finalizada. Resultados exportados en: {ruta_archivo_json}")
+    print(f"\nEvaluación finalizada.\nResultados exportados en: {ruta_archivo_json}")
 
 
 if __name__ == "__main__":
