@@ -17,32 +17,27 @@ from realce.algoritmos import aplicar_ecualizacion_global, aplicar_clahe, aplica
 from metricas.referenciadas import calcular_psnr, calcular_ambe, calcular_ssim
 from metricas.no_referenciadas import calcular_contraste, calcular_entropia
 
+import sys
+
 def verificar_existencia_directorios(ruta_originales, ruta_oscurecidas):
     """
     Verifica de manera estricta que los directorios de entrada existan y sean válidos.
 
     Comprueba tanto la existencia en disco como que la ruta apunte efectivamente 
-    a un directorio y no a un archivo suelto, garantizando que el pipeline 
-    tenga los datos necesarios antes de iniciar la evaluación de algoritmos.
+    a un directorio. Si ocurre un error, informa al usuario por pantalla y detiene
+    la ejecución limpiamente en lugar de arrojar una excepción abrupta.
 
     Args:
         ruta_originales: Objeto Path al directorio con las imágenes de referencia.
         ruta_oscurecidas: Objeto Path al directorio con las imágenes a procesar.
-
-    Raises:
-        FileNotFoundError: Si alguno de los directorios no se encuentra o no es válido.
     """
     if not ruta_originales.exists() or not ruta_originales.is_dir():
-        raise FileNotFoundError(
-            f"Error crítico: El directorio de imágenes originales no existe "
-            f"o no es un directorio válido en la ruta -> {ruta_originales}"
-        )
+        print(f"Error crítico: El directorio de imágenes originales no existe o no es válido -> {ruta_originales}")
+        sys.exit(1)
     
     if not ruta_oscurecidas.exists() or not ruta_oscurecidas.is_dir():
-        raise FileNotFoundError(
-            f"Error crítico: El directorio de imágenes oscurecidas no existe "
-            f"o no es un directorio válido en la ruta -> {ruta_oscurecidas}"
-        )
+        print(f"Error crítico: El directorio de imágenes oscurecidas no existe o no es válido -> {ruta_oscurecidas}")
+        sys.exit(1)
         
     print("Pre-chequeo exitoso: Los directorios de entrada están listos y accesibles.")
 
