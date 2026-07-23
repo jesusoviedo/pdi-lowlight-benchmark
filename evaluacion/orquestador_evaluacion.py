@@ -17,8 +17,6 @@ from realce.algoritmos import aplicar_ecualizacion_global, aplicar_clahe, aplica
 from metricas.referenciadas import calcular_psnr, calcular_ambe, calcular_ssim
 from metricas.no_referenciadas import calcular_contraste, calcular_entropia
 
-import sys
-
 def verificar_existencia_directorios(ruta_originales, ruta_oscurecidas):
     """
     Verifica de manera estricta que los directorios de entrada existan y sean válidos.
@@ -134,22 +132,115 @@ def aplicar_y_medir_tiempo(funcion_mejora, imagen_gris):
     return imagen_resultante, {"tiempo_ms": float(tiempo_milisegundos)}
 
 
+def evaluar_metodos_en_imagen(
+    ruta_imagen_oscura, 
+    ruta_imagen_original, 
+    imagen_oscura, 
+    imagen_referencia, 
+    contraste_original, 
+    entropia_original, 
+    psnr_oscurecida, 
+    ambe_oscurecida, 
+    ssim_oscurecida, 
+    contraste_oscurecida, 
+    entropia_oscurecida, 
+    configuraciones_experimentos, 
+    ruta_salida_img, 
+    ruta_raiz_proyecto
+):
+    """
+    Aplica todas las configuraciones experimentales a una imagen individual,
+    calcula las métricas de rendimiento y genera los diccionarios de resultados.
+
+    Args:
+        ruta_imagen_oscura: Objeto Path del archivo de imagen oscura.
+        ruta_imagen_original: Objeto Path del archivo de imagen original.
+        imagen_oscura: Matriz NumPy de la imagen oscura en escala de grises.
+        imagen_referencia: Matriz NumPy de la imagen original de referencia.
+        contraste_original: Diccionario con el contraste de la imagen original.
+        entropia_original: Diccionario con la entropía de la imagen original.
+        psnr_oscurecida: Diccionario con el PSNR de la imagen oscura.
+        ambe_oscurecida: Diccionario con el AMBE de la imagen oscura.
+        ssim_oscurecida: Diccionario con el SSIM de la imagen oscura.
+        contraste_oscurecida: Diccionario con el contraste de la imagen oscura.
+        entropia_oscurecida: Diccionario con la entropía de la imagen oscura.
+        configuraciones_experimentos: Lista de diccionarios con los experimentos.
+        ruta_salida_img: Objeto Path al directorio de salida de imágenes procesadas.
+        ruta_raiz_proyecto: Objeto Path a la raíz del proyecto para rutas relativas.
+
+    Returns:
+        list: Lista de diccionarios con los resultados detallados de cada método.
+    """
+    resultados_imagen = []
+    nombre_base = ruta_imagen_oscura.stem
+
+    for config in configuraciones_experimentos:
+        metodo = config["id_metodo"]
+        
+        # Ejecución algorítmica y perfilado de tiempo
+        imagen_procesada, metrica_tiempo_procesada = aplicar_y_medir_tiempo(config["funcion"], imagen_oscura)
+        
+        # Guardado en disco de la imagen resultante
+        nombre_salida = f"{nombre_base}_{metodo}.png"
+        ruta_guardado_img = ruta_salida_img / nombre_salida
+        cv2.imwrite(str(ruta_guardado_img), imagen_procesada)
+        
+        # Cálculo de métricas de calidad de la imagen procesada
+        psnr_procesada = calcular_psnr(imagen_referencia, imagen_procesada)
+        ambe_procesada = calcular_ambe(imagen_referencia, imagen_procesada)
+        ssim_procesada = calcular_ssim(imagen_referencia, imagen_procesada)
+        contraste_procesada = calcular_contraste(imagen_procesada)
+        entropia_procesada = calcular_entropia(imagen_procesada)
+
+        # Construcción del bloque de resultados para el JSON
+        resultados_imagen.append({
+            "id_imagen": nombre_salida,
+            "metodo": metodo,
+            "parametros": config["parametros"],
+            "rutas": {
+                "original": str(ruta_imagen_original.relative_to(ruta_raiz_proyecto).as_posix()),
+                "oscurecida": str(ruta_imagen_oscura.relative_to(ruta_raiz_proyecto).as_posix()),
+                "procesada": str(ruta_guardado_img.relative_to(ruta_raiz_proyecto).as_posix())
+            },
+            "metricas_imagen_procesada": {
+                **psnr_procesada,
+                **ambe_procesada,
+                **ssim_procesada,
+                **contraste_procesada,
+                **entropia_procesada,
+                **metrica_tiempo_procesada
+            },
+            "metricas_imagen_oscurecida": {
+                **psnr_oscurecida,
+                **ambe_oscurecida,
+                **ssim_oscurecida,
+                **contraste_oscurecida,
+                **entropia_oscurecida
+            },
+            "metricas_imagen_original": {
+                **contraste_original,
+                **entropia_original,
+            },
+            "tiempo_ms": metrica_tiempo_procesada["tiempo_ms"]
+        })
+
+    return resultados_imagen
+
+
 def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_img, ruta_archivo_json, ruta_raiz_proyecto):
     """
     Orquesta la ejecución de los experimentos de mejora de imagen sobre el dataset.
 
-    Recorre el directorio de imágenes oscurecidas, aplica las configuraciones de 
-    algoritmos definidas, calcula las métricas contrastando con la imagen original 
-    (Verdad Terreno), guarda las imágenes resultantes y compila un registro JSON 
-    estructurado con rutas relativas para su posterior análisis estadístico.
+    Coordina la inicialización de directorios, el conteo total de tareas para 
+    el seguimiento del progreso, la delegación del procesamiento por lotes 
+    y la persistencia incremental de los resultados en formato JSON.
 
     Args:
         ruta_originales: Objeto Path al directorio con las imágenes de referencia.
         ruta_oscurecidas: Objeto Path al directorio con las imágenes a procesar.
         ruta_salida_img: Objeto Path al directorio donde se guardarán las imágenes.
         ruta_archivo_json: Objeto Path completo del archivo JSON de salida.
-        ruta_raiz_proyecto: Objeto Path que apunta a la raíz del proyecto para 
-            calcular las rutas relativas.
+        ruta_raiz_proyecto: Objeto Path que apunta a la raíz del proyecto.
     """
     # Crear estructura de directorios de salida dinámicamente
     ruta_salida_img.mkdir(parents=True, exist_ok=True)
@@ -181,11 +272,11 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             print(f"Advertencia: Verdad Terreno no encontrada para {nombre_archivo}")
             continue
 
-        # Carga en memoria mediante función robusta para soportar tildes en rutas de Windows
+        # Lectura robusta de imágenes desde disco
         imagen_oscura = leer_imagen_robusto(ruta_imagen_oscura)
         imagen_referencia = leer_imagen_robusto(ruta_imagen_original)
 
-        # Calcular métricas originales una sola vez por imagen
+        # Calcular métricas de la imagen original una sola vez por imagen
         contraste_original = calcular_contraste(imagen_referencia)
         entropia_original = calcular_entropia(imagen_referencia)
 
@@ -196,71 +287,41 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
         contraste_oscurecida = calcular_contraste(imagen_oscura)
         entropia_oscurecida = calcular_entropia(imagen_oscura)
 
-        for config in configuraciones_experimentos:
-            # Incremento del contador de pasos y cálculo del porcentaje de avance
+        # Evaluar todos los métodos de mejora sobre la imagen oscura y obtener resultados
+        resultados_parciales = evaluar_metodos_en_imagen(
+            ruta_imagen_oscura,
+            ruta_imagen_original,
+            imagen_oscura,
+            imagen_referencia,
+            contraste_original,
+            entropia_original,
+            psnr_oscurecida,
+            ambe_oscurecida,
+            ssim_oscurecida,
+            contraste_oscurecida,
+            entropia_oscurecida,
+            configuraciones_experimentos,
+            ruta_salida_img,
+            ruta_raiz_proyecto
+        )
+
+        # Actualización de progreso y persistencia incremental de resultados
+        for resultado_metodo in resultados_parciales:
             paso_actual += 1
             porcentaje_avance = (paso_actual / total_pasos) * 100
-
-            metodo = config["id_metodo"]
             
-            # Ejecución algorítmica y perfilado de tiempo
-            imagen_procesada, metrica_tiempo_procesada = aplicar_y_medir_tiempo(config["funcion"], imagen_oscura)
+            registro_resultados.append(resultado_metodo)
             
-            # Guardado en disco de la imagen resultante
-            nombre_base = ruta_imagen_oscura.stem
-            nombre_salida = f"{nombre_base}_{metodo}.png"
-            ruta_guardado_img = ruta_salida_img / nombre_salida
-            cv2.imwrite(str(ruta_guardado_img), imagen_procesada)
-            
-            # Cálculo de métricas de calidad (referenciadas y no referenciadas)
-            psnr_procesada = calcular_psnr(imagen_referencia, imagen_procesada)
-            ambe_procesada = calcular_ambe(imagen_referencia, imagen_procesada)
-            ssim_procesada = calcular_ssim(imagen_referencia, imagen_procesada)
-            contraste_procesada = calcular_contraste(imagen_procesada)
-            entropia_procesada = calcular_entropia(imagen_procesada)
-
-            # Construcción del bloque JSON
-            registro_resultados.append({
-                "id_imagen": nombre_salida,
-                "metodo": metodo,
-                "parametros": config["parametros"],
-                "rutas": {
-                    "original": str(ruta_imagen_original.relative_to(ruta_raiz_proyecto).as_posix()),
-                    "oscurecida": str(ruta_imagen_oscura.relative_to(ruta_raiz_proyecto).as_posix()),
-                    "procesada": str(ruta_guardado_img.relative_to(ruta_raiz_proyecto).as_posix())
-                },
-                "metricas_imagen_procesada": {
-                    **psnr_procesada,
-                    **ambe_procesada,
-                    **ssim_procesada,
-                    **contraste_procesada,
-                    **entropia_procesada,
-                    **metrica_tiempo_procesada
-                },
-                "metricas_imagen_oscurecida": {
-                    **psnr_oscurecida,
-                    **ambe_oscurecida,
-                    **ssim_oscurecida,
-                    **contraste_oscurecida,
-                    **entropia_oscurecida
-                },
-                "metricas_imagen_original": {
-                    **contraste_original,
-                    **entropia_original,
-                }
-            })
-            
-            # Volcado estructurado de los resultados al disco
             with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
                 json.dump(registro_resultados, archivo_json, indent=2, ensure_ascii=False)
-
-            print(f"{porcentaje_avance:5.1f}% - Procesado: {nombre_archivo} | Método: {metodo} | Tiempo: {metrica_tiempo_procesada['tiempo_ms']:.2f} ms")
+            
+            print(f"{porcentaje_avance:5.1f}% - Procesado: {nombre_archivo} | Método: {resultado_metodo['metodo']} | Tiempo: {resultado_metodo['tiempo_ms']:.2f} ms")
         
     print(f"\nEvaluación finalizada.\nResultados exportados en: {ruta_archivo_json}")
 
 
 if __name__ == "__main__":
-    # DEFINICIÓN DE CONSTANTES ESTRUCTURALES Y NOMBRES
+    # Definición de nombres de carpetas y archivos
     NOMBRE_CARPETA_DATASET = "dataset"
     NOMBRE_CARPETA_EXPERIMENTOS = "experimento"
     
@@ -278,17 +339,17 @@ if __name__ == "__main__":
     directorio_base_dataset = directorio_raiz_proyecto / NOMBRE_CARPETA_DATASET
     directorio_base_experimentos = directorio_raiz_proyecto / NOMBRE_CARPETA_EXPERIMENTOS
     
-    # Composición de rutas de entrada (Lectura)
+    # Composición de rutas de entrada (lectura)
     ruta_entrada_originales = directorio_base_dataset / NOMBRE_CARPETA_IMG / NOMBRE_CARPETA_ORIGINAL
     ruta_entrada_oscurecidas = directorio_base_dataset / NOMBRE_CARPETA_IMG / NOMBRE_CARPETA_OSCURECIDA
 
     verificar_existencia_directorios(ruta_entrada_originales, ruta_entrada_oscurecidas)
     
-    # Composición de rutas de salida (Escritura)
+    # Composición de rutas de salida (escritura)
     ruta_salida_imagenes = directorio_base_experimentos / NOMBRE_CARPETA_IMG
     ruta_salida_archivo_json = directorio_base_experimentos / NOMBRE_CARPETA_JSON / NOMBRE_ARCHIVO_JSON
     
-    # Inyección de dependencias a la función principal, incluyendo la raíz del proyecto
+    # Ejecución del pipeline de evaluación con todas las configuraciones y métricas
     ejecutar_pipeline_evaluacion(
         ruta_entrada_originales, 
         ruta_entrada_oscurecidas, 
