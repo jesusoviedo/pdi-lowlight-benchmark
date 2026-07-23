@@ -12,10 +12,14 @@ def calcular_ambe(imagen_a, imagen_b):
     Returns:
         dict: Diccionario con la clave 'AMBE' y su respectivo valor numérico.
     """
+    # Convertimos las imágenes a tipo float64 para evitar problemas de desbordamiento
     media_a = np.mean(imagen_a.astype(np.float64))
     media_b = np.mean(imagen_b.astype(np.float64))
+
+    # Calculamos el Error Absoluto Medio de Brillo
+    ambe = np.abs(media_a - media_b)
     
-    return {"AMBE": float(np.abs(media_a - media_b))}
+    return {"AMBE": float(ambe)}
 
 
 def calcular_psnr(imagen_a, imagen_b, max_val=255.0):
@@ -30,14 +34,18 @@ def calcular_psnr(imagen_a, imagen_b, max_val=255.0):
     Returns:
         dict: Diccionario con la clave 'PSNR' y su respectivo valor en dB.
     """
+    # Convertimos las imágenes a tipo float64 para evitar problemas de desbordamiento
     imagen_a_float = imagen_a.astype(np.float64)
     imagen_b_float = imagen_b.astype(np.float64)
-    
+
+    # Calculamos el Error Cuadrático Medio (MSE)
     mse = np.mean((imagen_a_float - imagen_b_float) ** 2)
-    
+
+    # Evitamos la división por cero en caso de que las imágenes sean idénticas
     if mse == 0:
         return {"PSNR": float('inf')}
-    
+
+    # Calculamos el PSNR usando la fórmula estándar
     psnr = 20 * np.log10(max_val / np.sqrt(mse))
     
     return {"PSNR": float(psnr)}
@@ -63,7 +71,7 @@ def calcular_ssim(imagen_referencia, imagen_procesada, rango_datos=255):
     referencia_float = imagen_referencia.astype(np.float64)
     procesada_float = imagen_procesada.astype(np.float64)
     
-    # structural_similarity es una operación completamente vectorizada
+    # Calculamos el SSIM utilizando la función de skimage
     valor_ssim = structural_similarity(
         referencia_float,
         procesada_float,

@@ -17,17 +17,17 @@ from realce.algoritmos import aplicar_ecualizacion_global, aplicar_clahe, aplica
 from metricas.referenciadas import calcular_psnr, calcular_ambe, calcular_ssim
 from metricas.no_referenciadas import calcular_contraste, calcular_entropia
 
+
 def verificar_existencia_directorios(ruta_originales, ruta_oscurecidas):
-    """
-    Verifica de manera estricta que los directorios de entrada existan y sean válidos.
+    """Verifica de manera estricta que los directorios de entrada existan y sean válidos.
 
     Comprueba tanto la existencia en disco como que la ruta apunte efectivamente 
     a un directorio. Si ocurre un error, informa al usuario por pantalla y detiene
     la ejecución limpiamente en lugar de arrojar una excepción abrupta.
 
     Args:
-        ruta_originales: Objeto Path al directorio con las imágenes de referencia.
-        ruta_oscurecidas: Objeto Path al directorio con las imágenes a procesar.
+        ruta_originales (Path): Objeto con la ruta al directorio de imágenes de referencia.
+        ruta_oscurecidas (Path): Objeto con la ruta al directorio de imágenes a procesar.
     """
     if not ruta_originales.exists() or not ruta_originales.is_dir():
         print(f"Error crítico: El directorio de imágenes originales no existe o no es válido -> {ruta_originales}")
@@ -41,13 +41,11 @@ def verificar_existencia_directorios(ruta_originales, ruta_oscurecidas):
 
 
 def obtener_configuraciones_experimentos():
-    """
-    Retorna la lista estructurada con las configuraciones de los experimentos 
-    de mejora de imagen a evaluar en el pipeline.
+    """Retorna la lista estructurada con las configuraciones de los experimentos.
 
-    Cada diccionario incluye el identificador único del método, la referencia 
-    a la función algorítmica correspondiente y los hiperparámetros utilizados 
-    para garantizar la reproducibilidad del estudio.
+    Define los algoritmos de mejora de imagen a evaluar en el pipeline (incluyendo CLAHE,
+    Ecualización Global y un método adicional), referenciando la función algorítmica 
+    y los hiperparámetros utilizados para garantizar la reproducibilidad del estudio.
 
     Returns:
         list: Colección de diccionarios que definen los experimentos algorítmicos.
@@ -79,31 +77,38 @@ def obtener_configuraciones_experimentos():
             "parametros": {}
         }
     ]
+
     return configuraciones
 
 
 def leer_imagen_robusto(ruta_imagen):
-    """
-    Lee una imagen desde el disco soportando caracteres especiales en la ruta.
+    """Lee una imagen desde el disco soportando caracteres especiales en la ruta.
 
-    Utiliza numpy para leer los bytes en crudo y el decodificador de OpenCV
-    para evitar los problemas nativos de cv2.imread con tildes en Windows.
+    Utiliza NumPy para leer los bytes en crudo y el decodificador de OpenCV
+    para evitar los problemas nativos de cv2.imread en sistemas Windows cuando 
+    las rutas contienen tildes o caracteres especiales.
 
     Args:
-        ruta_imagen: Cadena de texto o un objeto Path indicando la ubicación del archivo.
+        ruta_imagen (str o Path): Cadena de texto o un objeto Path indicando la ubicación del archivo.
 
     Returns:
-        Matriz bidimensional correspondiente a la imagen en escala de grises.
-        Genera una excepción si la imagen no se puede decodificar.
+        numpy.ndarray: Matriz bidimensional correspondiente a la imagen en escala de grises.
+
+    Raises:
+        FileNotFoundError: Si el archivo no se puede leer o no existe en la ruta especificada.
+        ValueError: Si el archivo existe pero OpenCV no puede decodificarlo como imagen válida.
     """
+    # Convertir la ruta a cadena de texto para compatibilidad con np.fromfile
     ruta_texto = str(ruta_imagen)
     arreglo_bytes = np.fromfile(ruta_texto, dtype=np.uint8)
-    
+
+    # Validación de lectura de archivo
     if arreglo_bytes.size == 0:
         raise FileNotFoundError(f"No se pudo leer el archivo en la ruta: {ruta_texto}")
         
     imagen_decodificada = cv2.imdecode(arreglo_bytes, cv2.IMREAD_GRAYSCALE)
-    
+
+    # Validación de decodificación de imagen
     if imagen_decodificada is None:
         raise ValueError(f"El archivo existe pero no es una imagen válida: {ruta_texto}")
         
@@ -111,24 +116,28 @@ def leer_imagen_robusto(ruta_imagen):
 
 
 def aplicar_y_medir_tiempo(funcion_mejora, imagen_gris):
-    """
-    Ejecuta un algoritmo de mejora de imagen y mide su tiempo de procesamiento.
+    """Ejecuta un algoritmo de mejora de imagen y mide su tiempo de procesamiento.
 
-    Utiliza un contador de rendimiento de alta resolución para garantizar mediciones
-    rigurosas de eficiencia computacional.
+    Utiliza un contador de rendimiento de alta resolución (time.perf_counter) para
+    garantizar mediciones rigurosas de eficiencia computacional.
 
     Args:
-        funcion_mejora: Referencia a la función del algoritmo a ejecutar.
-        imagen_gris: Matriz bidimensional de la imagen en escala de grises.
+        funcion_mejora (callable): Referencia a la función del algoritmo a ejecutar.
+        imagen_gris (numpy.ndarray): Matriz bidimensional de la imagen en escala de grises.
 
     Returns:
-        Tupla que contiene la matriz procesada y un diccionario con el tiempo en milisegundos.
+        tuple: Una tupla que contiene:
+            - numpy.ndarray: La matriz de la imagen procesada.
+            - dict: Diccionario con la clave 'tiempo_ms' indicando el tiempo de ejecución en milisegundos.
     """
+    # Medición de tiempo de ejecución del algoritmo
     tiempo_inicio = time.perf_counter()
     imagen_resultante = funcion_mejora(imagen_gris)
     tiempo_fin = time.perf_counter()
-    
+
+    # Cálculo del tiempo transcurrido en milisegundos
     tiempo_milisegundos = (tiempo_fin - tiempo_inicio) * 1000.0
+
     return imagen_resultante, {"tiempo_ms": float(tiempo_milisegundos)}
 
 
@@ -148,28 +157,30 @@ def evaluar_metodos_en_imagen(
     ruta_salida_img, 
     ruta_raiz_proyecto
 ):
-    """
-    Aplica todas las configuraciones experimentales a una imagen individual,
-    calcula las métricas de rendimiento y genera los diccionarios de resultados.
+    """Aplica las configuraciones experimentales a una imagen, calculando sus métricas.
+
+    Procesa la imagen oscura con cada algoritmo (CLAHE, HE, etc.), calcula métricas clave
+    (PSNR, AMBE, SSIM, contraste y entropía) alineadas con la evaluación sumativa,
+    y estructura los resultados para su posterior exportación.
 
     Args:
-        ruta_imagen_oscura: Objeto Path del archivo de imagen oscura.
-        ruta_imagen_original: Objeto Path del archivo de imagen original.
-        imagen_oscura: Matriz NumPy de la imagen oscura en escala de grises.
-        imagen_referencia: Matriz NumPy de la imagen original de referencia.
-        contraste_original: Diccionario con el contraste de la imagen original.
-        entropia_original: Diccionario con la entropía de la imagen original.
-        psnr_oscurecida: Diccionario con el PSNR de la imagen oscura.
-        ambe_oscurecida: Diccionario con el AMBE de la imagen oscura.
-        ssim_oscurecida: Diccionario con el SSIM de la imagen oscura.
-        contraste_oscurecida: Diccionario con el contraste de la imagen oscura.
-        entropia_oscurecida: Diccionario con la entropía de la imagen oscura.
-        configuraciones_experimentos: Lista de diccionarios con los experimentos.
-        ruta_salida_img: Objeto Path al directorio de salida de imágenes procesadas.
-        ruta_raiz_proyecto: Objeto Path a la raíz del proyecto para rutas relativas.
+        ruta_imagen_oscura (Path): Ruta del archivo de la imagen subexpuesta.
+        ruta_imagen_original (Path): Ruta del archivo de la imagen de referencia.
+        imagen_oscura (numpy.ndarray): Matriz de la imagen oscura en escala de grises.
+        imagen_referencia (numpy.ndarray): Matriz de la imagen original en escala de grises.
+        contraste_original (dict): Valor de contraste de la imagen original.
+        entropia_original (dict): Valor de entropía de la imagen original.
+        psnr_oscurecida (dict): Valor PSNR de la imagen oscura respecto a la original.
+        ambe_oscurecida (dict): Valor AMBE de la imagen oscura respecto a la original.
+        ssim_oscurecida (dict): Valor SSIM de la imagen oscura respecto a la original.
+        contraste_oscurecida (dict): Valor de contraste de la imagen oscura.
+        entropia_oscurecida (dict): Valor de entropía de la imagen oscura.
+        configuraciones_experimentos (list): Lista de diccionarios con métodos y parámetros.
+        ruta_salida_img (Path): Directorio destino para guardar las imágenes procesadas.
+        ruta_raiz_proyecto (Path): Directorio base del proyecto para construir rutas relativas.
 
     Returns:
-        list: Lista de diccionarios con los resultados detallados de cada método.
+        list: Colección de diccionarios con los resultados detallados por cada método aplicado.
     """
     resultados_imagen = []
     nombre_base = ruta_imagen_oscura.stem
@@ -227,20 +238,25 @@ def evaluar_metodos_en_imagen(
     return resultados_imagen
 
 
-def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_img, ruta_archivo_json, ruta_raiz_proyecto):
-    """
-    Orquesta la ejecución de los experimentos de mejora de imagen sobre el dataset.
+def ejecutar_pipeline_evaluacion(
+    ruta_originales, 
+    ruta_oscurecidas, 
+    ruta_salida_img, 
+    ruta_archivo_json, 
+    ruta_raiz_proyecto
+):
+    """Orquesta la ejecución completa de los experimentos de mejora sobre el dataset.
 
-    Coordina la inicialización de directorios, el conteo total de tareas para 
-    el seguimiento del progreso, la delegación del procesamiento por lotes 
-    y la persistencia incremental de los resultados en formato JSON.
+    Coordina la inicialización de directorios, delegación del procesamiento por lotes,
+    cálculo de métricas requeridas (AMBE, PSNR, Contraste, Entropía) y persistencia
+    incremental de los resultados en un archivo JSON.
 
     Args:
-        ruta_originales: Objeto Path al directorio con las imágenes de referencia.
-        ruta_oscurecidas: Objeto Path al directorio con las imágenes a procesar.
-        ruta_salida_img: Objeto Path al directorio donde se guardarán las imágenes.
-        ruta_archivo_json: Objeto Path completo del archivo JSON de salida.
-        ruta_raiz_proyecto: Objeto Path que apunta a la raíz del proyecto.
+        ruta_originales (Path): Directorio que contiene las imágenes de referencia (Verdad Terreno).
+        ruta_oscurecidas (Path): Directorio que contiene las imágenes subexpuestas a procesar.
+        ruta_salida_img (Path): Directorio de destino para las imágenes resultantes.
+        ruta_archivo_json (Path): Ruta completa donde se exportará el registro JSON.
+        ruta_raiz_proyecto (Path): Ruta absoluta al directorio raíz del repositorio.
     """
     # Crear estructura de directorios de salida dinámicamente
     ruta_salida_img.mkdir(parents=True, exist_ok=True)
@@ -305,19 +321,21 @@ def ejecutar_pipeline_evaluacion(ruta_originales, ruta_oscurecidas, ruta_salida_
             ruta_raiz_proyecto
         )
 
-        # Actualización de progreso y persistencia incremental de resultados
-        for resultado_metodo in resultados_parciales:
-            paso_actual += 1
-            porcentaje_avance = (paso_actual / total_pasos) * 100
-            
-            registro_resultados.append(resultado_metodo)
-            
-            with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
-                json.dump(registro_resultados, archivo_json, indent=2, ensure_ascii=False)
-            
-            print(f"{porcentaje_avance:5.1f}% - Procesado: {nombre_archivo} | Método: {resultado_metodo['metodo']} | Tiempo: {resultado_metodo['tiempo_ms']:.2f} ms")
+        # Acumulación de resultados y actualización de progreso
+        registro_resultados.extend(resultados_parciales)
+
+        paso_actual += len(resultados_parciales)
+        porcentaje_avance = (paso_actual / total_pasos) * 100
         
-    print(f"\nEvaluación finalizada.\nResultados exportados en: {ruta_archivo_json}")
+        print(f"Progreso: {porcentaje_avance:5.1f}% | Memoria procesada: {nombre_archivo}")
+
+    print("\nProcesamiento finalizado. Guardando resultados en disco...")
+    
+    # Exportación de resultados a archivo JSON con codificación UTF-8 y formato legible
+    with open(ruta_archivo_json, "w", encoding="utf-8") as archivo_json:
+        json.dump(registro_resultados, archivo_json, indent=2, ensure_ascii=False)
+            
+    print(f"Exportación exitosa en: {ruta_archivo_json}")
 
 
 if __name__ == "__main__":

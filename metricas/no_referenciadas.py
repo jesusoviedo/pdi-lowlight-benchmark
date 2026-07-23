@@ -11,6 +11,7 @@ def calcular_entropia(imagen):
     Returns:
         dict: Diccionario con la clave 'Entropia' y su respectivo valor.
     """
+    # Calcular la entropía utilizando la función shannon_entropy de skimage
     entropia = shannon_entropy(imagen)
     
     return {"Entropia": float(entropia)}
@@ -26,6 +27,7 @@ def calcular_contraste(imagen):
     Returns:
         dict: Diccionario con la clave 'Contraste' y su respectivo valor.
     """
+    # Calcular el contraste como la desviación estándar de los valores de píxeles
     contraste = np.std(imagen)
     
     return {"Contraste": float(contraste)}
