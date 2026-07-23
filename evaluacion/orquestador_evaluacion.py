@@ -17,6 +17,36 @@ from realce.algoritmos import aplicar_ecualizacion_global, aplicar_clahe, aplica
 from metricas.referenciadas import calcular_psnr, calcular_ambe, calcular_ssim
 from metricas.no_referenciadas import calcular_contraste, calcular_entropia
 
+def verificar_existencia_directorios(ruta_originales, ruta_oscurecidas):
+    """
+    Verifica de manera estricta que los directorios de entrada existan y sean válidos.
+
+    Comprueba tanto la existencia en disco como que la ruta apunte efectivamente 
+    a un directorio y no a un archivo suelto, garantizando que el pipeline 
+    tenga los datos necesarios antes de iniciar la evaluación de algoritmos.
+
+    Args:
+        ruta_originales: Objeto Path al directorio con las imágenes de referencia.
+        ruta_oscurecidas: Objeto Path al directorio con las imágenes a procesar.
+
+    Raises:
+        FileNotFoundError: Si alguno de los directorios no se encuentra o no es válido.
+    """
+    if not ruta_originales.exists() or not ruta_originales.is_dir():
+        raise FileNotFoundError(
+            f"Error crítico: El directorio de imágenes originales no existe "
+            f"o no es un directorio válido en la ruta -> {ruta_originales}"
+        )
+    
+    if not ruta_oscurecidas.exists() or not ruta_oscurecidas.is_dir():
+        raise FileNotFoundError(
+            f"Error crítico: El directorio de imágenes oscurecidas no existe "
+            f"o no es un directorio válido en la ruta -> {ruta_oscurecidas}"
+        )
+        
+    print("Pre-chequeo exitoso: Los directorios de entrada están listos y accesibles.")
+
+
 def leer_imagen_robusto(ruta_imagen):
     """
     Lee una imagen desde el disco soportando caracteres especiales en la ruta.
@@ -227,6 +257,8 @@ if __name__ == "__main__":
     # Composición de rutas de entrada (Lectura)
     ruta_entrada_originales = directorio_base_dataset / NOMBRE_CARPETA_IMG / NOMBRE_CARPETA_ORIGINAL
     ruta_entrada_oscurecidas = directorio_base_dataset / NOMBRE_CARPETA_IMG / NOMBRE_CARPETA_OSCURECIDA
+
+    verificar_existencia_directorios(ruta_entrada_originales, ruta_entrada_oscurecidas)
     
     # Composición de rutas de salida (Escritura)
     ruta_salida_imagenes = directorio_base_experimentos / NOMBRE_CARPETA_IMG
