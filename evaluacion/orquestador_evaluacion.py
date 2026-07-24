@@ -231,8 +231,7 @@ def evaluar_metodos_en_imagen(
             "metricas_imagen_original": {
                 **contraste_original,
                 **entropia_original,
-            },
-            "tiempo_ms": metrica_tiempo_procesada["tiempo_ms"]
+            }
         })
 
     return resultados_imagen
